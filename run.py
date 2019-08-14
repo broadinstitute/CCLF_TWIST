@@ -51,6 +51,7 @@ def update(samplesetname,
            gsheeturllist=["https://docs.google.com/spreadsheets/d/1LR8OFylVClxf0kmZpAdlVjrn3RBcfZKpNoDYtKdnHB8",
                           "https://docs.google.com/spreadsheets/d/128dkFhL1A0GqTjmR7iMvBZE8j6ymO8krBL9WX-wUAn4"]):
 
+
 """
 get the non overlapping samples from a data workspace to a processing workspace
 
@@ -100,10 +101,11 @@ args:
                            for i, ID in enumerate(metadata['Collaborator Participant ID'])]
 
   samples1.index = recreateSampleID(samples1.index)
+  # re-creating sm-id out of the sample id.
+  newsamples['SM_ID'] = ['SM-' + i.split('-SM-')[-1] for i in newsamples.index]
 
   # filtering on what already exists in the processing workspace (refids)
   newsamples = samples1[(~samples1.index.isin(refids)) | samples1.index.isin(forcekeep)]
-  newsamples['SM_ID'] = ['SM-' + i.split('-SM-')[-1] for i in newsamples.index]
   tokeep = set(metadata['Exported DNA SM-ID']) & set(newsamples['SM_ID'])
 
   if len(newsamples[~newsamples.index.isin(tokeep)]) > 0:
@@ -111,6 +113,7 @@ args:
   newsamples = newsamples[newsamples.index.isin(tokeep)]
   metadata = metadata[metadata.index.isin(tokeep)]
 
+  # usefull to merge the two df, sm-id is one of the only unique id here
   newsamples = newsamples.set_index('SM_ID')
   newmetadata = metadata.set_index('Exported DNA SM-ID')
 
@@ -121,7 +124,10 @@ args:
   sample_info['reference_id'] = df.index
   sample_info['participant'] = df['Collaborator Participant ID']
   sample_info['aggregation_product_name_validation'] = [TSCA_version] * sample_info.shape[0]
-  # sample_info['bsp_sample_id_validation'] = sample_info['reference_id'] + samples1[samples1[]].shape[1]
+  # here we add this number as the reference id might be present many times already for different samples
+  # in the processing workspace
+  num = str(refsamples[refsamples['reference_id'] == sample_info['reference_id']].shape[1])
+  sample_info['bsp_sample_id_validation'] = sample_info['reference_id'] + str(num) if num > 0 else sample_info['reference_id']
   sample_info['stock_sample_id_validation'] = df['Stock DNA SM-ID']
   sample_info['sample_type'] = df['Sample Type']
   sample_info['picard_aggregation_type_validation'] = [picard_aggregation_type_validation] * sample_info.shape[0]
@@ -131,14 +137,19 @@ args:
   sample_info['primary_disease'] = df['Primary Disease']
   sample_info['media'] = df['Media on Tube']
   # match collection data and error out
-  ##sample_info['Collection'] = [cohorts[cohorts['Collection'] == val].ID for val in df['Collection']]
+  for val in df['Collection']:
+    res = cohorts[cohorts['Collection'] == val]
+      if len(res) == 0:
+        raise "we do not have a correponsding cohort for this collection"
+      sample_info['cohort'] = res.ID
+
   sample_info['tissue_site'] = df['Tissue Site']
   sample_info['source'] = [source] * sample_info.shape[0]
   sample_info['sample_id'] = df['sample_id']
-  sample_info['cohort']
 
   sample_info = sample_info.set_index('sample_id')
 
+  # creating the sample_sets
   normals = [r["participant"] for i, r in sample_info.iterrows() if r['sample_type'] == "Normal"]
   normalsid = [i for i, r in sample_info.iterrows() if r['sample_type'] == "Normal"]
   tumors = [r["participant"] for i, r in sample_info.iterrows() if r['sample_type'] == "Tumor"]
