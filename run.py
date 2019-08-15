@@ -47,7 +47,7 @@ def update(samplesetname,
            TSCA_version="TSCA Rapid Cancer Detection Panel v2",
            picard_aggregation_type_validation="PCR",
            forcekeep=[],
-           cohorts2id="https://",
+           cohorts2id="https://docs.google.com/spreadsheets/d/1R97pgzoX0YClGDr5nmQYQwimnKXxDBGnGzg7YPlhZJU/edit#gid=872582930",
            gsheeturllist=["https://docs.google.com/spreadsheets/d/1LR8OFylVClxf0kmZpAdlVjrn3RBcfZKpNoDYtKdnHB8",
                           "https://docs.google.com/spreadsheets/d/128dkFhL1A0GqTjmR7iMvBZE8j6ymO8krBL9WX-wUAn4"]):
 
@@ -138,10 +138,10 @@ args:
   sample_info['media'] = df['Media on Tube']
   # match collection data and error out
   for val in df['Collection']:
-    res = cohorts[cohorts['Collection'] == val]
+    res = cohorts[cohorts[0] == val]
       if len(res) == 0:
         raise "we do not have a correponsding cohort for this collection"
-      sample_info['cohort'] = res.ID
+      sample_info['cohort'] = res[1]
 
   sample_info['tissue_site'] = df['Tissue Site']
   sample_info['source'] = [source] * sample_info.shape[0]
