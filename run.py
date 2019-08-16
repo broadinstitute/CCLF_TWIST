@@ -40,7 +40,7 @@ def update(samplesetname,
            data_namespace="broad-genomics-delivery",
            data_workspace="Cancer_Cell_Line_Factory_CCLF_PanCancer_PanelSeq",
            proc_namespace="nci-mimoun-bi-org",
-           proc_workspace="PANCAN_TWIST",
+           proc_workspace="PANCAN_TWIS_Dev",
            source="CCLF",
            site="HT33MBCX2",
            tsca_id="TSCA45",
@@ -52,35 +52,35 @@ def update(samplesetname,
                           "https://docs.google.com/spreadsheets/d/128dkFhL1A0GqTjmR7iMvBZE8j6ymO8krBL9WX-wUAn4"]):
 
 
-"""
-get the non overlapping samples from a data workspace to a processing workspace
+  """
+  get the non overlapping samples from a data workspace to a processing workspace
 
-Adds them in a manner consistent to the CCLF processing model for analysis and fingerprinting,
-creating the necessary pairs and sets. 
-It will output nothing but will have updated the different Terra tsvs so that it contains:
-- the new samples
-- the new participants
-- pairs for each samples tumor_normals
-- sets for all samples, current batch and all_normals
-- pair sets for the batch and the different cohorts.
+  Adds them in a manner consistent to the CCLF processing model for analysis and fingerprinting,
+  creating the necessary pairs and sets.
+  It will output nothing but will have updated the different Terra tsvs so that it contains:
+  - the new samples
+  - the new participants
+  - pairs for each samples tumor_normals
+  - sets for all samples, current batch and all_normals
+  - pair sets for the batch and the different cohorts.
 
-args:
-- date: (opts) str if one wants to add a processing date to the current batch
-- samplesetname: str the name of the sampleset, i.e. batch
-- data_namespace: str 
-- data_workspace: str
-- proc_namespace: str
-- proc_workspace: str
-- source: str
-- site: str (opts)
-- tsca_id: str (opts)
-- TSCA_version: str (opts)
-- picard_aggregation_type_validation: (opts)
-- forcekeep: (opts) list[str] different samples you would want to reupload
-- cohorts2id: (opts) str path to a googlesheet containing the match : cohorts_name / cohort id 
-- gsheeturllist: (opts) list[str] url to google sheets where metadata for samples might be
+  args:
+  - date: (opts) str if one wants to add a processing date to the current batch
+  - samplesetname: str the name of the sampleset, i.e. batch
+  - data_namespace: str
+  - data_workspace: str
+  - proc_namespace: str
+  - proc_workspace: str
+  - source: str
+  - site: str (opts)
+  - tsca_id: str (opts)
+  - TSCA_version: str (opts)
+  - picard_aggregation_type_validation: (opts)
+  - forcekeep: (opts) list[str] different samples you would want to reupload
+  - cohorts2id: (opts) str path to a googlesheet containing the match : cohorts_name / cohort id
+  - gsheeturllist: (opts) list[str] url to google sheets where metadata for samples might be
 
-"""
+  """
   wfrom = dm.WorkspaceManager(data_namespace, data_workspace)
   wto = dm.WorkspaceManager(proc_namespace, proc_workspace)
   # we look at all the samples we already have

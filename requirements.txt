@@ -1,0 +1,2 @@
+firecloud-dalmatian==0.0.16
+pandas==0.25.0
