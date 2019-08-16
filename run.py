@@ -101,11 +101,13 @@ def update(samplesetname,
                            for i, ID in enumerate(metadata['Collaborator Participant ID'])]
 
   samples1.index = recreateSampleID(samples1.index)
-  # re-creating sm-id out of the sample id.
-  newsamples['SM_ID'] = ['SM-' + i.split('-SM-')[-1] for i in newsamples.index]
 
   # filtering on what already exists in the processing workspace (refids)
   newsamples = samples1[(~samples1.index.isin(refids)) | samples1.index.isin(forcekeep)]
+
+  # re-creating sm-id out of the sample id.
+  newsamples['SM_ID'] = ['SM-' + i.split('-SM-')[-1] for i in newsamples.index]
+
   tokeep = set(metadata['Exported DNA SM-ID']) & set(newsamples['SM_ID'])
 
   if len(newsamples[~newsamples.index.isin(tokeep)]) > 0:
