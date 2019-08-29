@@ -40,7 +40,7 @@ def update(samplesetname,
            data_namespace="broad-genomics-delivery",
            data_workspace="Cancer_Cell_Line_Factory_CCLF_PanCancer_PanelSeq",
            proc_namespace="nci-mimoun-bi-org",
-           proc_workspace="PANCAN_TWIST copy",
+           proc_workspace="PANCAN_TWIS_Dev",
            source="CCLF",
            site="HT33MBCX2",
            tsca_id="TSCA45",
@@ -50,37 +50,35 @@ def update(samplesetname,
            cohorts2id="https://docs.google.com/spreadsheets/d/1R97pgzoX0YClGDr5nmQYQwimnKXxDBGnGzg7YPlhZJU/edit#gid=872582930",
            gsheeturllist=["https://docs.google.com/spreadsheets/d/1LR8OFylVClxf0kmZpAdlVjrn3RBcfZKpNoDYtKdnHB8",
                           "https://docs.google.com/spreadsheets/d/128dkFhL1A0GqTjmR7iMvBZE8j6ymO8krBL9WX-wUAn4"]):
+  """
+  get the non overlapping samples from a data workspace to a processing workspace
 
+  Adds them in a manner consistent to the CCLF processing model for analysis and fingerprinting,
+  creating the necessary pairs and sets.
+  It will output nothing but will have updated the different Terra tsvs so that it contains:
+  - the new samples
+  - the new participants
+  - pairs for each samples tumor_normals
+  - sets for all samples, current batch and all_normals
+  - pair sets for the batch and the different cohorts.
 
-"""
-get the non overlapping samples from a data workspace to a processing workspace
+  args:
+  - date: (opts) str if one wants to add a processing date to the current batch
+  - samplesetname: str the name of the sampleset, i.e. batch
+  - data_namespace: str
+  - data_workspace: str
+  - proc_namespace: str
+  - proc_workspace: str
+  - source: str
+  - site: str (opts)
+  - tsca_id: str (opts)
+  - TSCA_version: str (opts)
+  - picard_aggregation_type_validation: (opts)
+  - forcekeep: (opts) list[str] different samples you would want to reupload
+  - cohorts2id: (opts) str path to a googlesheet containing the match : cohorts_name / cohort id
+  - gsheeturllist: (opts) list[str] url to google sheets where metadata for samples might be
 
-Adds them in a manner consistent to the CCLF processing model for analysis and fingerprinting,
-creating the necessary pairs and sets.
-It will output nothing but will have updated the different Terra tsvs so that it contains:
-- the new samples
-- the new participants
-- pairs for each samples tumor_normals
-- sets for all samples, current batch and all_normals
-- pair sets for the batch and the different cohorts.
-
-args:
-- date: (opts) str if one wants to add a processing date to the current batch
-- samplesetname: str the name of the sampleset, i.e. batch
-- data_namespace: str
-- data_workspace: str
-- proc_namespace: str
-- proc_workspace: str
-- source: str
-- site: str (opts)
-- tsca_id: str (opts)
-- TSCA_version: str (opts)
-- picard_aggregation_type_validation: (opts)
-- forcekeep: (opts) list[str] different samples you would want to reupload
-- cohorts2id: (opts) str path to a googlesheet containing the match : cohorts_name / cohort id
-- gsheeturllist: (opts) list[str] url to google sheets where metadata for samples might be
-
-"""
+  """
   wfrom = dm.WorkspaceManager(data_namespace, data_workspace)
   wto = dm.WorkspaceManager(proc_namespace, proc_workspace)
   # we look at all the samples we already have
@@ -102,7 +100,11 @@ args:
 
   # filtering on what already exists in the processing workspace (refids)
   newsamples = samples1[(~samples1.index.isin(refids)) | samples1.index.isin(forcekeep)]
+
+
+# re-creating sm-id out of the sample id.
   newsamples['SM_ID'] = ['SM-' + i.split('-SM-')[-1] for i in newsamples.index]
+
   tokeep = set(metadata['Exported DNA SM-ID']) & set(newsamples['SM_ID'])
 
   # usefull to merge the two df, sm-id is one of the only unique id here
