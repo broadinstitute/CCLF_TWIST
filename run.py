@@ -11,7 +11,7 @@ import sys
 import TerraFunction as terra
 from Helper import *
 import numpy as np
-import Sheets
+from gsheets import Sheets
 
 # https://github.com/jkobject/JKBIO
 
@@ -40,7 +40,7 @@ def update(samplesetname,
            data_namespace="broad-genomics-delivery",
            data_workspace="Cancer_Cell_Line_Factory_CCLF_PanCancer_PanelSeq",
            proc_namespace="nci-mimoun-bi-org",
-           proc_workspace="PANCAN_TWIST",
+           proc_workspace="PANCAN_TWIST copy",
            source="CCLF",
            site="HT33MBCX2",
            tsca_id="TSCA45",
@@ -56,7 +56,7 @@ def update(samplesetname,
 get the non overlapping samples from a data workspace to a processing workspace
 
 Adds them in a manner consistent to the CCLF processing model for analysis and fingerprinting,
-creating the necessary pairs and sets. 
+creating the necessary pairs and sets.
 It will output nothing but will have updated the different Terra tsvs so that it contains:
 - the new samples
 - the new participants
@@ -67,7 +67,7 @@ It will output nothing but will have updated the different Terra tsvs so that it
 args:
 - date: (opts) str if one wants to add a processing date to the current batch
 - samplesetname: str the name of the sampleset, i.e. batch
-- data_namespace: str 
+- data_namespace: str
 - data_workspace: str
 - proc_namespace: str
 - proc_workspace: str
@@ -77,7 +77,7 @@ args:
 - TSCA_version: str (opts)
 - picard_aggregation_type_validation: (opts)
 - forcekeep: (opts) list[str] different samples you would want to reupload
-- cohorts2id: (opts) str path to a googlesheet containing the match : cohorts_name / cohort id 
+- cohorts2id: (opts) str path to a googlesheet containing the match : cohorts_name / cohort id
 - gsheeturllist: (opts) list[str] url to google sheets where metadata for samples might be
 
 """
@@ -87,7 +87,6 @@ args:
   refsamples = wto.get_samples()
   refids = refsamples.index
   cohorts = sheets.get(cohorts2id).sheets[0].to_frame()
-
   # we use this gsheet package to get all the sheets into one dataframe
   metadata = pd.concat([sheets.get(url).sheets[0].to_frame() for url in gsheeturllist])
 
@@ -97,51 +96,54 @@ args:
   # creating sample_id (like in processing workspace) for metadata and samples1
   metadata = metadata.dropna(0, subset=['Collaborator Sample ID'])
   ttype = [replace[i.split('_')[1][-1]] for i in metadata["Collaborator Sample ID"]]
-  metadata['sample_id'] = [ID + '-' + ttype[i] + '-' + metadata.iloc[i]['Exported DNA SM-ID']
-                           for i, ID in enumerate(metadata['Collaborator Participant ID'])]
+  metadata['sample_id'] = [ID + '-' + ttype[i] + '-' + metadata.iloc[i]['Exported DNA SM-ID'] for i, ID in enumerate(metadata['Collaborator Participant ID'])]
 
   samples1.index = recreateSampleID(samples1.index)
-  # re-creating sm-id out of the sample id.
-  newsamples['SM_ID'] = ['SM-' + i.split('-SM-')[-1] for i in newsamples.index]
 
   # filtering on what already exists in the processing workspace (refids)
   newsamples = samples1[(~samples1.index.isin(refids)) | samples1.index.isin(forcekeep)]
+  newsamples['SM_ID'] = ['SM-' + i.split('-SM-')[-1] for i in newsamples.index]
   tokeep = set(metadata['Exported DNA SM-ID']) & set(newsamples['SM_ID'])
-
-  if len(newsamples[~newsamples.index.isin(tokeep)]) > 0:
-    print('we could not add these as we dont have metadata for them:' + str(newsamples[~newsamples.index.isin(tokeep)]))
-  newsamples = newsamples[newsamples.index.isin(tokeep)]
-  metadata = metadata[metadata.index.isin(tokeep)]
 
   # usefull to merge the two df, sm-id is one of the only unique id here
   newsamples = newsamples.set_index('SM_ID')
-  newmetadata = metadata.set_index('Exported DNA SM-ID')
-
+  metadata = metadata.set_index('Exported DNA SM-ID')
+  for
+  if len(newsamples[~newsamples.index.isin(tokeep)]) > 0:
+    print('we could not add these as we dont have metadata for them:' + str(newsamples[~newsamples.index.isin(tokeep)]))
+  newsamples = newsamples[newsamples.index.isin(tokeep)]
+  newmetadata = metadata[metadata.index.isin(tokeep)]
   print('creating new df')
   df = pd.concat([newmetadata, newsamples], axis=1, sort=True)
-  # from this new set we create a dataframe which will get uploaded to terra
+  # from this new set we create a dataframe which will get uploaded
+  #  to terra
   sample_info = df[['crai_or_bai_path', 'cram_or_bam_path']]
+  sample_info['individual_id'] = df['Collaborator Participant ID']
   sample_info['reference_id'] = df.index
   sample_info['participant'] = df['Collaborator Participant ID']
   sample_info['aggregation_product_name_validation'] = [TSCA_version] * sample_info.shape[0]
   # here we add this number as the reference id might be present many times already for different samples
   # in the processing workspace
-  num = str(refsamples[refsamples['reference_id'] == sample_info['reference_id']].shape[1])
-  sample_info['bsp_sample_id_validation'] = sample_info['reference_id'] + str(num) if num > 0 else sample_info['reference_id']
+  sample_info['external_id_validation'] = [i + '_' + str(refsamples[refsamples['external_id_validation'] == i].shape[1]) if refsamples[refsamples['external_id_validation'] == i].shape[0] > 0 else i for i in sample_info['reference_id']]
+  sample_info['bsp_sample_id_validation'] = df.index
   sample_info['stock_sample_id_validation'] = df['Stock DNA SM-ID']
   sample_info['sample_type'] = df['Sample Type']
   sample_info['picard_aggregation_type_validation'] = [picard_aggregation_type_validation] * sample_info.shape[0]
   sample_info['tumor_subtype'] = df['Tumor Type']
+  sample_info['squid_sample_id_validation'] = sample_info['external_id_validation']
   sample_info['source_subtype_validation'] = df['Original Material Type']
   sample_info['processed_subtype_validation'] = df['Material Type']
   sample_info['primary_disease'] = df['Primary Disease']
   sample_info['media'] = df['Media on Tube']
+  sample_info['Collection'] = df['Collection']
   # match collection data and error out
-  for val in df['Collection']:
-    res = cohorts[cohorts[0] == val]
-      if len(res) == 0:
-        raise "we do not have a correponsding cohort for this collection"
-      sample_info['cohort'] = res[1]
+  cohortlist = []
+  for k, val in sample_info['Collection'].iteritems():
+    res = cohorts[cohorts['Name'] == val]
+    if len(res) == 0:
+      raise "we do not have a correponsding cohort for this collection"
+    cohortlist.append(res['ID'].values[0])
+  sample_info['cohorts'] = cohortlist
 
   sample_info['tissue_site'] = df['Tissue Site']
   sample_info['source'] = [source] * sample_info.shape[0]
@@ -184,48 +186,72 @@ args:
       newpairs['participant'].append(val)
 
   newpairs = pd.DataFrame(newpairs).set_index('pair_id')
+
+  print("all the entities need to exist! Else it will raise an error and block further uploads to Terra")
   print("uploading new samples")
   wto.upload_samples(sample_info)
+  if not "NA" in wto.get_samples().index.tolist():
+    wto.upload_samples(pd.DataFrame({'sample_id': ['NA'], 'participant_id': ['NA']}).set_index('sample_id'))
+
+  print("creating pairs and pairsets")
+  wto.upload_entities('pair', newpairs)
+  wto.update_pair_set(samplesetname + '_pairs', newpairs.index)
+  cohorts_in_batch = []
+  cohorts_with_pairs = []
+  for val in cohorts['ID'].values:
+    cohortsamples = sample_info[sample_info["cohorts"] == val].index.tolist()
+    tumorsamplesincohort = sample_info[sample_info["cohorts"] == val][sample_info['sample_type'] == "Tumor"].index.tolist()
+    pairsamples = newpairs[newpairs['case_sample'].isin(tumorsamplesincohort)].index.tolist()
+    if len(cohortsamples) > 0:
+      cohorts_in_batch.append(val)
+      try:
+        terra.addToSampleSet(wto, val, cohortsamples)
+      except KeyError:  # we may not have this set yet
+        wto.update_sample_set(val, cohortsamples)
+    if len(pairsamples) > 0:
+      cohorts_with_pairs.append(val)
+      try:
+        terra.addToPairSet(wto, val, pairsamples)
+      except KeyError:  # we may not have this set yet
+        wto.update_pair_set(val, pairsamples)
   print("creating a sample set")
-  for val in cohorts.index:
-    terra.addToSampleSet(wto, val, sample_info[sample_info["Collection"] == val].index.tolist())
   wto.update_sample_set(sample_set_id=samplesetname + "_all", sample_ids=sample_info.index.tolist())
   wto.update_sample_set(sample_set_id=samplesetname + "_tumors", sample_ids=tumorsid)
   wto.update_sample_set(sample_set_id=samplesetname + "_normals", sample_ids=normalsid)
   normalsid.extend([k for k, val in refsamples.iterrows() if val.sample_type == "Normal"])
   # Same as cum pon but better
   wto.update_sample_set(sample_set_id="All_normals", sample_ids=normalsid)
-  wto.update_sample_set(sample_set_id="All_samples", sample_ids=wto.get_samples().index.tolist())
-  wto.update_entity_attributes('pairs', pd.DataFrame(newpairs))
-  wto.upload_entities('pair_set', newpairs, index=True)
+  all_samples = wto.get_samples()..index.tolist()
+  all_samples.remove('NA')
+  wto.update_sample_set(sample_set_id="All_samples", sample_ids=all_samples)
 
 
 def submit(samplesetname):
   print("Creating Terra submissions: remember you can only cancel \
-    or interact with terra submissions from the Terra website. \
-    https://app.terra.bio/#workspaces/nci-mimoun-bi-org/PANCAN_TWIST/data")
+      or interact with terra submissions from the Terra website. \
+      https://app.terra.bio/#workspaces/" + proc_namespace.replace(" ", "%20") + "/" + proc_workspace.replace(" ", "%20") + "/job_history")
 
   RenameBAM_TWIST = wto.create_submission("RenameBAM_TWIST", samplesetname + "_all", 'sample_set', expression='this.samples')
-  print("waiting for 'Rename' & 'FNG_Compile_Pileup_Cnt'")
-  terra.waitForSubmission(wto, [RenameBAM_TWIST, FNG_Compile_Pileup_Cnt])
+  print("waiting for 'Rename'")
+  terra.waitForSubmission(wto, [RenameBAM_TWIST])
 
   CalculateTargetCoverage_PANCAN = wto.create_submission('CalculateTargetCoverage_PANCAN', samplesetname + "_all", 'sample_set', expression='this.samples')
   DepthOfCov_PANCAN = wto.create_submission('DepthOfCov_PANCAN', samplesetname + "_all", 'sample_set', expression='this.samples')
   print("waiting for 'CalculateTargetCoverage_PANCAN' & 'DepthOfCov_PANCAN'")
-  terra.waitForSubmission(wto, [CalculateTargetCoverage_PANCAN, DepthOfCov_PANCAN, FNG_Compile_db_slow_download])
+  terra.waitForSubmission(wto, [CalculateTargetCoverage_PANCAN, DepthOfCov_PANCAN])
 
   CreatePanelOfNormalsGATK_PANCAN = wto.create_submission('CreatePanelOfNormalsGATK_PANCAN', 'All_normals')
   DepthOfCovQC_PANCAN = wto.create_submission('DepthOfCovQC_PANCAN', samplesetname + "_all", 'sample_set', expression='this.samples')
-  print("waiting for 'DepthOfCovQC_PANCAN' & 'MutationCalling_Normals' & 'CNV_CreatePoNForCNV'")
+  print("waiting for 'DepthOfCovQC_PANCAN' & 'CNV_CreatePoNForCNV'")
   terra.waitForSubmission(wto, [DepthOfCovQC_PANCAN, CreatePanelOfNormalsGATK_PANCAN])
 
   CallSomaticCNV_PANCAN = wto.create_submission('CallSomaticCNV_PANCAN', samplesetname + "_all", 'sample_set', expression='this.samples')
-  print("waiting for 'SNV_FilterGermline' & 'CreatePoN_SNV_Mutect2' & 'CreatePoN_SNV_Mutect1', 'CallSomaticCNV_PANCAN'")
+  print("waiting for 'CallSomaticCNV_PANCAN'")
   terra.waitForSubmission(wto, [CallSomaticCNV_PANCAN])
 
   MutationCalling_Normals_TWIST = wto.create_submission("MutationCalling_Normals_TWIST", samplesetname + "_normals", 'sample_set', expression='this.samples')
-  print("waiting for 'SNV_FilterGermline' & 'CreatePoN_SNV_Mutect2' & 'CreatePoN_SNV_Mutect1', 'CallSomaticCNV_PANCAN'")
-  terra.waitForSubmission(wto, [CallSomaticCNV_PANCAN])
+  print("waiting for 'MutationCalling_Normals_TWIST'")
+  terra.waitForSubmission(wto, [MutationCalling_Normals_TWIST])
 
   SNV_FilterGermlineEvents_NormalSample_TWIST = wto.create_submission('SNV_FilterGermlineEvents_NormalSample_TWIST', samplesetname + "_normals", 'sample_set', expression='this.samples')
   print("waiting for 'SNV_FilterGermline'")
@@ -233,34 +259,39 @@ def submit(samplesetname):
 
   CreatePoN_SNV_Mutect1 = wto.create_submission('CreatePoN_SNV_Mutect1', "All_normals")
   CreatePoN_SNV_Mutect2 = wto.create_submission('CreatePoN_SNV_Mutect2', "All_normals")
-  print("waiting for 'CreatePoN_SNV_Mutect2' & 'CreatePoN_SNV_Mutect1', 'CallSomaticCNV_PANCAN'")
+  print("waiting for 'CreatePoN_SNV_Mutect2' & 'CreatePoN_SNV_Mutect1'")
   terra.waitForSubmission(wto, [CreatePoN_SNV_Mutect1, CreatePoN_SNV_Mutect2])
 
   PlotSomaticCNVMaps_PANCAN = wto.create_submission('PlotSomaticCNVMaps_PANCAN', samplesetname + "_all")
+  for val in cohorts_in_batch:
+    wto.create_submission("PlotSomaticCNVMaps_PANCAN", val)
+  print("submitted final jobs for CNV pipeline")
+
   SNV_PostProcessing_Normals = wto.create_submission('SNV_PostProcessing_Normals', samplesetname + "_normals")
-  MutationCalling_Tumors_TWIST = wto.create_submission('MutationCalling_Tumors_TWIST', samplesetname + "_normals", 'sample_set', expression='this.samples')
+  MutationCalling_Tumors_TWIST = wto.create_submission('MutationCalling_Tumors_TWIST', samplesetname + '_pairs', 'pair_set', expression='this.pairs')
   print("waiting for 'SNV_PostProcessing' & 'MutationCalling_Tumors_TWIST'")
   terra.waitForSubmission(wto, [SNV_PostProcessing_Normals, MutationCalling_Tumors_TWIST])
 
-  SNV_FilterGermlineEvents_TumorSample = wto.create_submission('SNV_FilterGermlineEvents_TumorSample', samplesetname + "_normals", 'sample_set', expression='this.samples')
+  SNV_FilterGermlineEvents_TumorSample = wto.create_submission('SNV_FilterGermlineEvents_TumorSample', samplesetname + '_pairs', 'pair_set', expression='this.pairs')
   print("waiting for 'SNV_FilterGermlineEvents_TumorSample'")
   terra.waitForSubmission(wto, SNV_FilterGermlineEvents_TumorSample)
 
-  SNV_PostProcessing_TWIST = wto.create_submission('SNV_PostProcessing_TWIST', samplesetname + "_tumors", 'sample_set', expression='this.samples')
-  print("waiting for 'SNV_PostProcessing'")
-  terra.waitForSubmission(wto, [SNV_PostProcessing_TWIST, PlotSomaticCNVMaps_PANCAN])
+  SNV_PostProcessing_TWIST = wto.create_submission('SNV_PostProcessing_TWIST', samplesetname + '_pairs', "pair_set")
+  for val in cohorts_with_pairs:
+    wto.create_submission("PlotSomaticCNVMaps_PANCAN", val, "pair_set")
+  print("Submitted final jobs for SNV pipeline")
 
   FNG_Compile_Pileup_Cnt = wto.create_submission("FNG_Compile_Pileup_Cnt", samplesetname + "_all", 'sample_set', expression='this.samples')
   print("waiting for 'FNG_Compile_Pileup_Cnt'")
   terra.waitForSubmission(wto, [FNG_Compile_Pileup_Cnt])
 
   FNG_Compile_db_slow_download = wto.create_submission("FNG_Compile_db_slow_download", "All_samples")
-  print("waiting for 'FNG_Compile_db_slow_download'")
+  print("waiting for 'FNG_Compile_db'")
   terra.waitForSubmission(wto, [FNG_Compile_db_slow_download])
 
   FNG_Query_db = wto.create_submission("FNG_Query_db", samplesetname + "_all", 'sample_set', expression='this.samples')
-  print("waiting for 'FNG_Query_db'")
-  terra.waitForSubmission(wto, [FNG_Query_db])
+  print("Submitted final FNG Job")
+
   print('Done')
 
 

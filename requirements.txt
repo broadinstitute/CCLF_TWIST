@@ -1,0 +1,5 @@
+gsheets==0.3.2
+git+git://github.com/jkobject/JKBIO.git
+pandas
+firecloud-dalmatian==2.19
+numpy
