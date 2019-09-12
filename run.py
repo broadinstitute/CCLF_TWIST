@@ -82,6 +82,7 @@ def update(samplesetname,
   wfrom = dm.WorkspaceManager(data_namespace, data_workspace)
   wto = dm.WorkspaceManager(proc_namespace, proc_workspace)
   # we look at all the samples we already have
+  # we look at all the samples we already have
   refsamples = wto.get_samples()
   refids = refsamples.index
   cohorts = sheets.get(cohorts2id).sheets[0].to_frame()
@@ -93,35 +94,28 @@ def update(samplesetname,
 
   # creating sample_id (like in processing workspace) for metadata and samples1
   metadata = metadata.dropna(0, subset=['Collaborator Sample ID'])
-  ttype = [replace[i.split('_')[1][-1]] for i in metadata["Collaborator Sample ID"]]
-  metadata['sample_id'] = [ID + '-' + ttype[i] + '-' + metadata.iloc[i]['Exported DNA SM-ID'] for i, ID in enumerate(metadata['Collaborator Participant ID'])]
+  ttype = [i for i in metadata["Sample Type"]]
+  metadata['sample_id'] = [val['Collaborator Participant ID'] + '-' + val['Sample Type'] + '-' + val['Exported DNA SM-ID'] for i, val in metadata.iterrows()]
 
-  samples1.index = recreateSampleID(samples1.index)
+  sample_id = [val["individual_alias"] + '-' + val['sample_type'] + '-' + i.split('_')[2] for i, val in samples1.iterrows()]
+  samples1.index = sample_id
 
   # filtering on what already exists in the processing workspace (refids)
   newsamples = samples1[(~samples1.index.isin(refids)) | samples1.index.isin(forcekeep)]
-
-
-# re-creating sm-id out of the sample id.
-  newsamples['SM_ID'] = ['SM-' + i.split('-SM-')[-1] for i in newsamples.index]
-
-  tokeep = set(metadata['Exported DNA SM-ID']) & set(newsamples['SM_ID'])
+  tokeep = set(metadata.index) & set(newsamples.index)
 
   # usefull to merge the two df, sm-id is one of the only unique id here
-  newsamples = newsamples.set_index('SM_ID')
-  metadata = metadata.set_index('Exported DNA SM-ID')
-  for
   if len(newsamples[~newsamples.index.isin(tokeep)]) > 0:
     print('we could not add these as we dont have metadata for them:' + str(newsamples[~newsamples.index.isin(tokeep)]))
   newsamples = newsamples[newsamples.index.isin(tokeep)]
   newmetadata = metadata[metadata.index.isin(tokeep)]
+
   print('creating new df')
   df = pd.concat([newmetadata, newsamples], axis=1, sort=True)
-  # from this new set we create a dataframe which will get uploaded
-  #  to terra
+  # from this new set we create a dataframe which will get uploaded to terra
   sample_info = df[['crai_or_bai_path', 'cram_or_bam_path']]
   sample_info['individual_id'] = df['Collaborator Participant ID']
-  sample_info['reference_id'] = df.index
+  sample_info['reference_id'] = df['Exported DNA SM-ID']
   sample_info['participant'] = df['Collaborator Participant ID']
   sample_info['aggregation_product_name_validation'] = [TSCA_version] * sample_info.shape[0]
   # here we add this number as the reference id might be present many times already for different samples
@@ -149,7 +143,7 @@ def update(samplesetname,
 
   sample_info['tissue_site'] = df['Tissue Site']
   sample_info['source'] = [source] * sample_info.shape[0]
-  sample_info['sample_id'] = df['sample_id']
+  sample_info['sample_id'] = df.index
 
   sample_info = sample_info.set_index('sample_id')
 
@@ -255,14 +249,14 @@ def submit(samplesetname):
   print("waiting for 'MutationCalling_Normals_TWIST'")
   terra.waitForSubmission(wto, [MutationCalling_Normals_TWIST])
 
-  SNV_FilterGermlineEvents_NormalSample_TWIST = wto.create_submission('SNV_FilterGermlineEvents_NormalSample_TWIST', samplesetname + "_normals", 'sample_set', expression='this.samples')
+  FilterGermlineVariants_NormalSample_TWIST = wto.create_submission('FilterGermlineVariants_NormalSample_TWIST', samplesetname + "_normals", 'sample_set', expression='this.samples')
   print("waiting for 'SNV_FilterGermline'")
-  terra.waitForSubmission(wto, [SNV_FilterGermlineEvents_NormalSample_TWIST])
+  terra.waitForSubmission(wto, [FilterGermlineVariants_NormalSample_TWIST])
 
-  CreatePoN_SNV_Mutect1 = wto.create_submission('CreatePoN_SNV_Mutect1', "All_normals")
-  CreatePoN_SNV_Mutect2 = wto.create_submission('CreatePoN_SNV_Mutect2', "All_normals")
-  print("waiting for 'CreatePoN_SNV_Mutect2' & 'CreatePoN_SNV_Mutect1'")
-  terra.waitForSubmission(wto, [CreatePoN_SNV_Mutect1, CreatePoN_SNV_Mutect2])
+  CreatePoNSNV_Mutect1 = wto.create_submission('CreatePoNSNV_Mutect1', "All_normals")
+  CreatePoN_SNV_MuTect2 = wto.create_submission('CreatePoN_SNV_MuTect2', "All_normals")
+  print("waiting for 'CreatePoN_SNV_MuTect2' & 'CreatePoNSNV_Mutect1'")
+  terra.waitForSubmission(wto, [CreatePoNSNV_Mutect1, CreatePoN_SNV_MuTect2])
 
   PlotSomaticCNVMaps_PANCAN = wto.create_submission('PlotSomaticCNVMaps_PANCAN', samplesetname + "_all")
   for val in cohorts_in_batch:
@@ -274,13 +268,11 @@ def submit(samplesetname):
   print("waiting for 'SNV_PostProcessing' & 'MutationCalling_Tumors_TWIST'")
   terra.waitForSubmission(wto, [SNV_PostProcessing_Normals, MutationCalling_Tumors_TWIST])
 
-  SNV_FilterGermlineEvents_TumorSample = wto.create_submission('SNV_FilterGermlineEvents_TumorSample', samplesetname + '_pairs', 'pair_set', expression='this.pairs')
-  print("waiting for 'SNV_FilterGermlineEvents_TumorSample'")
-  terra.waitForSubmission(wto, SNV_FilterGermlineEvents_TumorSample)
+  FilterGermlineEvents_TumorSample = wto.create_submission('FilterGermlineEvents_TumorSample', samplesetname + '_pairs', 'pair_set', expression='this.pairs')
+  print("waiting for 'FilterGermlineEvents_TumorSample'")
+  terra.waitForSubmission(wto, FilterGermlineEvents_TumorSample)
 
-  SNV_PostProcessing_TWIST = wto.create_submission('SNV_PostProcessing_TWIST', samplesetname + '_pairs', "pair_set")
-  for val in cohorts_with_pairs:
-    wto.create_submission("PlotSomaticCNVMaps_PANCAN", val, "pair_set")
+  SNVPostProcessing_TWIST = wto.create_submission('SNVPostProcessing_TWIST', samplesetname + '_pairs', "pair_set")
   print("Submitted final jobs for SNV pipeline")
 
   FNG_Compile_Pileup_Cnt = wto.create_submission("FNG_Compile_Pileup_Cnt", samplesetname + "_all", 'sample_set', expression='this.samples')
@@ -291,12 +283,7 @@ def submit(samplesetname):
   print("waiting for 'FNG_Compile_db'")
   terra.waitForSubmission(wto, [FNG_Compile_db_slow_download])
 
-  FNG_Query_db = wto.create_submission("FNG_Query_db", samplesetname + "_all", 'sample_set', expression='this.samples')
+  FNG_Query_db = wto.create_submission("FNG_Query_db", samplesetname + "_all")
   print("Submitted final FNG Job")
 
   print('Done')
-
-
-def recreateSampleID(listLike):
-  return [i.split('_')[3] + '_' + i.split('_')[4][:-1] + '-' + replace[i.split('_')[4][-1]] +
-          '-' + i.split('_')[2] for i in listLike]
