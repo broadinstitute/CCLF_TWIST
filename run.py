@@ -49,7 +49,9 @@ def update(samplesetname,
            forcekeep=[],
            cohorts2id="https://docs.google.com/spreadsheets/d/1R97pgzoX0YClGDr5nmQYQwimnKXxDBGnGzg7YPlhZJU/edit#gid=872582930",
            gsheeturllist=["https://docs.google.com/spreadsheets/d/1LR8OFylVClxf0kmZpAdlVjrn3RBcfZKpNoDYtKdnHB8",
-                          "https://docs.google.com/spreadsheets/d/128dkFhL1A0GqTjmR7iMvBZE8j6ymO8krBL9WX-wUAn4"]):
+                          "https://docs.google.com/spreadsheets/d/128dkFhL1A0GqTjmR7iMvBZE8j6ymO8krBL9WX-wUAn4",
+                          "https://docs.google.com/spreadsheets/d/1S3DqBdVkd9dLP1PDYcdSWuD2Iy2gJpzuYBhvmP37UxU",
+                          "https://docs.google.com/spreadsheets/d/1kVIeIw66AxWLhAZlqUnAY17S87Rtfhijf1o3x0hG3Jw"]):
   """
   get the non overlapping samples from a data workspace to a processing workspace
 
