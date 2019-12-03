@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>{{title}}</title>
+	<script src="http://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous">		</script>
+	<script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.js"></script>
+	<script type="text/javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+	<script type="text/javascript" src="https://cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
+	
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">	
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.css">
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/dataTables.bootstrap4.min.css">
+</head>
+<body>
+
+<div class="container-fluid">
+	<div class="row">
+		<div class="col-2"></div>
+		<div class="col-8">
+			<h3>QC Results for {{tsca_id}}</h3>
+			<hr>
+			<!-- CARD 1 -->
+			<div class="card">
+				<div class="card-header">
+					<h3>CCLF Batch Report for {{tsca_id}}: QC results</h3>	
+				</div>
+				<div class="card-block">
+					<table class="table table-striped table-bordered display" cellspacing="0" width="100%" id="">
+					  <thead>
+					    <tr>
+					      <th scope="col">External ID</th>
+					      <th scope="col">Mean Interval Coverage</th>
+					      <th scope="col">Depth of Cov QC</th>
+					      <th scope="col">Mouse QC Result</th>
+					    </tr>
+					  </thead>
+					  <tbody>
+					  	{% for sample in samples %}
+					    <tr>
+					      <th scope="row">{{sample.external_id}}</th>
+					      <td>{{sample.mean_interval_cvg}}</td>
+					      <td>{{sample.depth_of_cov_qc_results}}</td>
+					      <td>{{sample.mouse_qc_results}}</td>
+					    </tr>
+					    {% endfor %}
+					  </tbody>
+					</table>
+				</div>
+			</div>
+			<!-- END CARD 1 -->
+			<hr>
+			<!-- CARD 2 -->
+			<div class="card">
+				<div class="card-header">
+					<h3>CCLF Fingerprinting results for {{tsca_id}}</h3>
+					<p>These samples should not match, as they belong to different participants, but they do.</p>
+				</div>
+				<div class="card-block">
+					<table class="table table-striped table-bordered display" cellspacing="0" width="100%" id="">
+					  <thead>
+					    <tr>
+					      <th scope="col">sample.database</th>
+					      <th scope="col">sample.query</th>
+					      <th scope="col">Percentage matching</th>
+					      <th scope="col">sample.database.batch</th>
+					      <th scope="col">sample.query.batch</th>
+					    </tr>
+					  </thead>
+					  <tbody>
+					  	{% for sample in samples_should_not_match %}
+					    <tr>
+					      <th scope="row">{{sample["sample.database"]}}</th>
+					      <td>{{sample["sample.query"]}}</td>
+					      <td>{{sample["pct_matching"]}}</td>
+					      <td>{{sample["sample.database.batch"]}}</td>
+					      <td>{{sample["sample.query.batch"]}}</td>
+					    </tr>
+					    {% endfor %}
+					  </tbody>
+					</table>
+				</div>
+			</div>
+			<!-- END CARD 2 -->
+			<hr>
+			<!-- CARD 3 -->
+			<div class="card">
+				<div class="card-header">
+					<h3>CCLF Fingerprinting results for {{tsca_id}}</h3>
+					<p>These samples should match as they belong to same participant, but don't match.</p>
+				</div>
+				<div class="card-block">
+					<table class="table table-striped table-bordered display" cellspacing="0" width="100%" id="">
+					  <thead>
+					    <tr>
+					      <th scope="col">sample.database</th>
+					      <th scope="col">sample.query</th>
+					      <th scope="col">Percentage matching</th>
+					      <th scope="col">sample.database.batch</th>
+					      <th scope="col">sample.query.batch</th>
+					    </tr>
+					  </thead>
+					  <tbody>
+					  	{% for sample in samples_should_match %}
+					    <tr>
+					      <th scope="row">{{sample["sample.database"]}}</th>
+					      <td>{{sample["sample.query"]}}</td>
+					      <td>{{sample["pct_matching"]}}</td>
+					      <td>{{sample["sample.database.batch"]}}</td>
+					      <td>{{sample["sample.query.batch"]}}</td>
+					    </tr>
+					    {% endfor %}
+					  </tbody>
+					</table>
+				</div>
+			</div>
+			<!-- END CARD 3 -->
+		</div>
+		<div class="col-2"></div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		$('table.display').DataTable();
+	} );
+</script>
+</body>
+</html>
