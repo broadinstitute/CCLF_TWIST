@@ -244,6 +244,10 @@ if __name__ == '__main__':
     if not assert_inputs(sample_ids, external_ids, sample_types, participant_ids, tn_files, depth_of_cov_qcs):
         import sys
         sys.exit()
-    sample_ids, external_ids, participant_ids, tn_files = remove_samples_low_coverage(sample_ids,
-                                                                                      external_ids, sample_types, participant_ids, tn_files, depth_of_cov_qcs)
+    sample_ids, external_ids, sample_types, participant_ids, tn_files = remove_samples_low_coverage(sample_ids,
+                                                                                                    external_ids,
+                                                                                                    sample_types,
+                                                                                                    participant_ids,
+                                                                                                    tn_files,
+                                                                                                    depth_of_cov_qcs)
     plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, tn_files)
