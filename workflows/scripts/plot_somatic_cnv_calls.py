@@ -1,4 +1,4 @@
-mport matplotlib
+import matplotlib
 matplotlib.use('Agg')
 import argparse
 import numpy as np
@@ -68,7 +68,7 @@ def argsort(seq):
 
 
 def assert_inputs(sample_ids, external_ids, sample_types, participant_ids, files, depth_of_cov_qcs):
-    """Ensure inputs are correct, and that the external_ids, sample_ids, sample_types, 
+    """Ensure inputs are correct, and that the external_ids, sample_ids, sample_types,
     participant_ids, files arrays correspond to each other
     Returns:
         - True / False if inputs are correct
