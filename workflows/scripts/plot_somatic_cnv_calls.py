@@ -225,7 +225,7 @@ def remove_samples_low_coverage(sample_ids, external_ids, sample_types, particip
     samples_excluded = [sample_ids[i] for i in indices_samples_to_exclude]
     print("Excluding samples: %s" % (samples_excluded))
 
-    indices_samples_to_keep = [idx for idx, (sid, eid, pid, f, qc) in enumerate(zip(sample_ids,
+    indices_samples_to_keep = [idx for idx, (sid, eid, stype, pid, f, qc) in enumerate(zip(sample_ids,
                                                                                     external_ids, sample_types, participant_ids, files, depth_of_cov_qcs)) if qc == 'pass']
     sample_ids = [sample_ids[i] for i in indices_samples_to_keep]
     external_ids = [external_ids[i] for i in indices_samples_to_keep]
