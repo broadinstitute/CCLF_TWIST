@@ -145,10 +145,11 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     # why sort? aids interpretation of the CNV plots
     ################################################
     # make boolean column identifying the normal samples; want to eventually have these on the far left of the CNV plot
-    df['is_normal'] = [i == "Normal" for i in sample_types]  # check:/fix
-    df['participant_id'] = participant_ids
-    df['external_id'] = external_ids
-    df[df.columns[4:]] = df[df.columns[4:]].T.sort_values(by=['is_normal', 'participant_id', 'external_id']).T
+    subdf = df[df.columns[4:]]
+    subdf['is_normal'] = [i == "Normal" for i in sample_types]  # check:/fix
+    subdf['participant_id'] = participant_ids
+    subdf['external_id'] = external_ids
+    df[df.columns[4:]] = subdf.T.sort_values(by=['is_normal', 'participant_id', 'external_id']).T
     df.drop(['is_normal', 'participant_id'], axis=1, inplace=True)
     # even if have patient specific normal, I think I need to include it on the left hand side
     # thus put boolean column before the patient_id
@@ -226,7 +227,7 @@ def remove_samples_low_coverage(sample_ids, external_ids, sample_types, particip
     print("Excluding samples: %s" % (samples_excluded))
 
     indices_samples_to_keep = [idx for idx, (sid, eid, stype, pid, f, qc) in enumerate(zip(sample_ids,
-                                                                                    external_ids, sample_types, participant_ids, files, depth_of_cov_qcs)) if qc == 'pass']
+                                                                                           external_ids, sample_types, participant_ids, files, depth_of_cov_qcs)) if qc == 'pass']
     sample_ids = [sample_ids[i] for i in indices_samples_to_keep]
     external_ids = [external_ids[i] for i in indices_samples_to_keep]
     files = [files[i] for i in indices_samples_to_keep]
