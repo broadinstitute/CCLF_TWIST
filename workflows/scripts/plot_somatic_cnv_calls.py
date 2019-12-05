@@ -154,11 +154,9 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     subdf['participant_id'] = participant_ids
     subdf['external_id'] = external_ids
     df[df.columns[4:]] = subdf.sort_values(by=['is_normal', 'participant_id', 'external_id']).drop(
-        ['is_normal', 'participant_id','external_id'], axis=1, inplace=True).T
+        ['is_normal', 'participant_id', 'external_id'], axis=1).T
     # even if have patient specific normal, I think I need to include it on the left hand side
     # thus put boolean column before the patient_id
-
-
 
     ################################################
     # Save raw data to file
