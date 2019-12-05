@@ -136,7 +136,11 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     df.loc[df['chrm_int'] == 'Y', 'chrm_int'] = 24
     df['chrm_int'] = df['chrm_int'].astype(int)
     # Sort values
+    # perform nested sort in the dataframe so that the CNV plot we create will be sorted by normals
+    # on left, then sorted by patient id (and sorted by ext_id within pt_id)
+    # get rid of the column we added for sorting
     df.sort_values(by='chrm_int', ascending=False, inplace=True)
+    df = df.drop('chrm_int', axis=1)
 
     ################################################
     # Sort datatable by patient_id, external_id
@@ -149,15 +153,12 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     subdf['is_normal'] = [i == "Normal" for i in sample_types]  # check:/fix
     subdf['participant_id'] = participant_ids
     subdf['external_id'] = external_ids
-    df[df.columns[4:]] = subdf.sort_values(by=['is_normal', 'participant_id', 'external_id']).T
-    df.drop(['is_normal', 'participant_id'], axis=1, inplace=True)
+    df[df.columns[4:]] = subdf.sort_values(by=['is_normal', 'participant_id', 'external_id']).drop(
+        ['is_normal', 'participant_id','external_id'], axis=1, inplace=True).T
     # even if have patient specific normal, I think I need to include it on the left hand side
     # thus put boolean column before the patient_id
 
-    # perform nested sort in the dataframe so that the CNV plot we create will be sorted by normals
-    # on left, then sorted by patient id (and sorted by ext_id within pt_id)
-    df.sort_values(by=['chrm_int'], ascending=False, inplace=True)
-    # get rid of the column we added for sorting
+
 
     ################################################
     # Save raw data to file
