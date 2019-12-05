@@ -145,11 +145,11 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     # why sort? aids interpretation of the CNV plots
     ################################################
     # make boolean column identifying the normal samples; want to eventually have these on the far left of the CNV plot
-    subdf = df[df.columns[4:]]
+    subdf = df[df.columns[4:]].T
     subdf['is_normal'] = [i == "Normal" for i in sample_types]  # check:/fix
     subdf['participant_id'] = participant_ids
     subdf['external_id'] = external_ids
-    df[df.columns[4:]] = subdf.T.sort_values(by=['is_normal', 'participant_id', 'external_id']).T
+    df[df.columns[4:]] = subdf.sort_values(by=['is_normal', 'participant_id', 'external_id']).T
     df.drop(['is_normal', 'participant_id'], axis=1, inplace=True)
     # even if have patient specific normal, I think I need to include it on the left hand side
     # thus put boolean column before the patient_id
