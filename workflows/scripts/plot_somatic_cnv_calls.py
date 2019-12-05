@@ -148,7 +148,7 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     df['is_normal'] = [i == "Normal" for i in sample_types]  # check:/fix
     df['participant_id'] = participant_ids
     df['external_id'] = external_ids
-    df = df.T.sort_values(by=['is_normal', 'participant_id', 'external_id']).T
+    df[df.columns[4:]] = df[df.columns[4:]].T.sort_values(by=['is_normal', 'participant_id', 'external_id']).T
     df.drop(['is_normal', 'participant_id'], axis=1, inplace=True)
     # even if have patient specific normal, I think I need to include it on the left hand side
     # thus put boolean column before the patient_id
