@@ -162,8 +162,9 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     # Save raw data to file
     ################################################
     print("Saving raw data to file...")
-    fname = "%s.cnv_calls_unsegmented" % (args.tsca_id)
-    df.to_csv("./%s.txt" % fname, sep="\t", index=False)
+    fname = tsca_id + ".cnv_calls_unsegmented"
+    df.to_csv(fname + ".txt", sep="\t", index=False)
+    print(fname + ".txt")
 
     ################################################
     # Save raw data to file with sample ids
