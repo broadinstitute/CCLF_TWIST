@@ -215,7 +215,7 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
 
     fig.subplots_adjust(bottom=0.55)
     fig.savefig(fname + ".png")
-    print(fname".png")
+    print(fname+".png")
     os.system('ls -alh')
     return
 
