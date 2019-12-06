@@ -7,6 +7,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import math
+import os
 
 ############################################
 # Plot somatic CNV heatmap
@@ -170,8 +171,8 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     # Save raw data to file with sample ids
     ################################################
     df_sample_ids = df.rename(columns=dict(zip(external_ids, sample_ids)))
-    df_sample_ids.to_csv("./%s.sample_ids.txt" % fname, sep="\t", index=False)
-
+    df_sample_ids.to_csv(fname + ".sample_ids.txt", sep="\t", index=False)
+    print(fname + ".sample_ids.txt")
     # ################################################
     # ## Save raw data to file with external ids
     # ################################################
@@ -213,8 +214,9 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
         axs[fig_num].set_xticks(range(len(df[fig_external_ids].columns.tolist())))
 
     fig.subplots_adjust(bottom=0.55)
-    fig.savefig("%s.png" % fname)
-
+    fig.savefig(fname + ".png")
+    print(fname".png")
+    os.system('ls -alh')
     return
 
 
