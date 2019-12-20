@@ -7,6 +7,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import math
+import os
 
 ############################################
 # Plot somatic CNV heatmap
@@ -136,7 +137,11 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     df.loc[df['chrm_int'] == 'Y', 'chrm_int'] = 24
     df['chrm_int'] = df['chrm_int'].astype(int)
     # Sort values
+    # perform nested sort in the dataframe so that the CNV plot we create will be sorted by normals
+    # on left, then sorted by patient id (and sorted by ext_id within pt_id)
+    # get rid of the column we added for sorting
     df.sort_values(by='chrm_int', ascending=False, inplace=True)
+    df = df.drop('chrm_int', axis=1)
 
     ################################################
     # Sort datatable by patient_id, external_id
@@ -145,32 +150,29 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     # why sort? aids interpretation of the CNV plots
     ################################################
     # make boolean column identifying the normal samples; want to eventually have these on the far left of the CNV plot
-    df['is_normal'] = [i == "Normal" for i in sample_types]  # check:/fix
-    df['participant_id'] = participant_ids
-    df['external_id'] = external_ids
-    df[df.columns[4:]] = df[df.columns[4:]].T.sort_values(by=['is_normal', 'participant_id', 'external_id']).T
-    df.drop(['is_normal', 'participant_id'], axis=1, inplace=True)
+    subdf = df[df.columns[4:]].T
+    subdf['is_normal'] = [i == "Normal" for i in sample_types]  # check:/fix
+    subdf['participant_id'] = participant_ids
+    subdf['external_id'] = external_ids
+    df[df.columns[4:]] = subdf.sort_values(by=['is_normal', 'participant_id', 'external_id']).drop(
+        ['is_normal', 'participant_id', 'external_id'], axis=1).T
     # even if have patient specific normal, I think I need to include it on the left hand side
     # thus put boolean column before the patient_id
-
-    # perform nested sort in the dataframe so that the CNV plot we create will be sorted by normals
-    # on left, then sorted by patient id (and sorted by ext_id within pt_id)
-    df.sort_values(by=['chrm_int'], ascending=False, inplace=True)
-    # get rid of the column we added for sorting
 
     ################################################
     # Save raw data to file
     ################################################
     print("Saving raw data to file...")
-    fname = "%s.cnv_calls_unsegmented" % (args.tsca_id)
-    df.to_csv("./%s.txt" % fname, sep="\t", index=False)
+    fname = tsca_id + ".cnv_calls_unsegmented"
+    df.to_csv(fname + ".txt", sep="\t", index=False)
+    print(fname + ".txt")
 
     ################################################
     # Save raw data to file with sample ids
     ################################################
     df_sample_ids = df.rename(columns=dict(zip(external_ids, sample_ids)))
-    df_sample_ids.to_csv("./%s.sample_ids.txt" % fname, sep="\t", index=False)
-
+    df_sample_ids.to_csv(fname + ".sample_ids.txt", sep="\t", index=False)
+    print(fname + ".sample_ids.txt")
     # ################################################
     # ## Save raw data to file with external ids
     # ################################################
@@ -212,8 +214,9 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
         axs[fig_num].set_xticks(range(len(df[fig_external_ids].columns.tolist())))
 
     fig.subplots_adjust(bottom=0.55)
-    fig.savefig("%s.png" % fname)
-
+    fig.savefig(fname + ".png")
+    print(fname+".png")
+    os.system('ls -alh')
     return
 
 
@@ -226,7 +229,7 @@ def remove_samples_low_coverage(sample_ids, external_ids, sample_types, particip
     print("Excluding samples: %s" % (samples_excluded))
 
     indices_samples_to_keep = [idx for idx, (sid, eid, stype, pid, f, qc) in enumerate(zip(sample_ids,
-                                                                                    external_ids, sample_types, participant_ids, files, depth_of_cov_qcs)) if qc == 'pass']
+                                                                                           external_ids, sample_types, participant_ids, files, depth_of_cov_qcs)) if qc == 'pass']
     sample_ids = [sample_ids[i] for i in indices_samples_to_keep]
     external_ids = [external_ids[i] for i in indices_samples_to_keep]
     files = [files[i] for i in indices_samples_to_keep]
