@@ -205,7 +205,7 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
         axs[fig_num].pcolor(df[fig_external_ids].values, cmap=plt.cm.RdBu_r, vmin=-2, vmax=2)
         axs[fig_num].set_yticklabels(chromosomes, minor=False)
         axs[fig_num].set_yticks(tick_positions)
-        axs[fig_num].set_xticklabels(labels_for_xaxis, rotation=60, ha="left")
+        axs[fig_num].set_xticklabels(labels_for_xaxis, rotation=90, ha="left")
         axs[fig_num].set_xticks(range(len(df[fig_external_ids].columns.tolist())))
 
     fig.subplots_adjust(bottom=0.55)
