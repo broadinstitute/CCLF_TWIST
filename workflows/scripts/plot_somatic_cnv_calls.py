@@ -136,28 +136,10 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     df.loc[df['chrm_int'] == 'X', 'chrm_int'] = 23
     df.loc[df['chrm_int'] == 'Y', 'chrm_int'] = 24
     df['chrm_int'] = df['chrm_int'].astype(int)
-    # Sort values
-    # perform nested sort in the dataframe so that the CNV plot we create will be sorted by normals
-    # on left, then sorted by patient id (and sorted by ext_id within pt_id)
-    # get rid of the column we added for sorting
+
+    # sort rows by chrm
     df.sort_values(by='chrm_int', ascending=False, inplace=True)
     df = df.drop('chrm_int', axis=1)
-
-    ################################################
-    # Sort datatable by patient_id, external_id
-    # want nested sorting: sorted by chrm values, then patient_id, then external_id.
-    # also want all the normals on the left
-    # why sort? aids interpretation of the CNV plots
-    ################################################
-    # make boolean column identifying the normal samples; want to eventually have these on the far left of the CNV plot
-    subdf = df[df.columns[4:]].T
-    subdf['is_normal'] = [i == "Normal" for i in sample_types]  # check:/fix
-    subdf['participant_id'] = participant_ids
-    subdf['external_id'] = external_ids
-    df[df.columns[4:]] = subdf.sort_values(by=['is_normal', 'participant_id', 'external_id']).drop(
-        ['is_normal', 'participant_id', 'external_id'], axis=1).T
-    # even if have patient specific normal, I think I need to include it on the left hand side
-    # thus put boolean column before the patient_id
 
     ################################################
     # Save raw data to file
@@ -204,9 +186,19 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     print("axs: ", axs)
 
     # Draw figure for each sample set
-    # check: want to have all normals on the left, then sorted by participant_id and external_id
+    # with all normals on the left of the first figure, then the remainder sorted by participant_id and external_id
+    # and split into multiple figures if there are more than samples_per_fig samples
     for fig_num in np.arange(num_figs):
-        fig_external_ids = external_ids[fig_num * samples_per_fig: (fig_num + 1) * samples_per_fig]
+        # need to select external ids in correct order here; above sorting of the df doesn't matter at all
+        subdf = df[df.columns[4:]].T
+        subdf['is_normal'] = [i == "Normal" for i in sample_types]
+        subdf['participant_id'] = participant_ids
+        subdf['external_id'] = external_ids
+
+        # sort columns
+        external_ids_sorted = subdf.sort_values(by=['is_normal', 'participant_id', 'external_id'], ascending = [False, True, True]).loc[:,'external_id']
+
+        fig_external_ids = external_ids_sorted[fig_num * samples_per_fig: (fig_num + 1) * samples_per_fig]
         axs[fig_num].pcolor(df[fig_external_ids].values, cmap=plt.cm.RdBu_r, vmin=-2, vmax=2)
         axs[fig_num].set_yticklabels(chromosomes, minor=False)
         axs[fig_num].set_yticks(tick_positions)
