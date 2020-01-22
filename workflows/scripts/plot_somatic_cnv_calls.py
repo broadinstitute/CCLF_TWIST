@@ -195,14 +195,17 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
         subdf['participant_id'] = participant_ids
         subdf['external_id'] = external_ids
 
-        # sort columns
+        # sorted columns
         external_ids_sorted = subdf.sort_values(by=['is_normal', 'participant_id', 'external_id'], ascending = [False, True, True]).loc[:,'external_id']
+        participant_ids_sorted = subdf.sort_values(by=['is_normal', 'participant_id', 'external_id'], ascending = [False, True, True]).loc[:,'participant_id']
+        # make x-axis labels with format "participant_id: external_id"
+        labels_for_xaxis = [str(m)+': '+str(n) for m,n in zip(participant_ids_sorted, external_ids_sorted)]
 
         fig_external_ids = external_ids_sorted[fig_num * samples_per_fig: (fig_num + 1) * samples_per_fig]
         axs[fig_num].pcolor(df[fig_external_ids].values, cmap=plt.cm.RdBu_r, vmin=-2, vmax=2)
         axs[fig_num].set_yticklabels(chromosomes, minor=False)
         axs[fig_num].set_yticks(tick_positions)
-        axs[fig_num].set_xticklabels(df[fig_external_ids].columns.tolist(), rotation=90, ha="left")
+        axs[fig_num].set_xticklabels(labels_for_xaxis, rotation=90, ha="left")
         axs[fig_num].set_xticks(range(len(df[fig_external_ids].columns.tolist())))
 
     fig.subplots_adjust(bottom=0.55)
