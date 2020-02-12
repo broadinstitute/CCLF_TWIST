@@ -105,25 +105,16 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
 
     # First DF (necessary to establish)
     # check: need to add participant_ids / pid
-    dfs = [pd.read_table(files[0],
+    df = pd.read_csv(files[0],
                          index_col=None, header=0, comment='#',
-                         usecols=['contig', 'start', 'stop', 'name', sample_ids[0]]
-                         ).rename(columns={sample_ids[0]: external_ids[0]})]
+                         usecols=['contig', 'start', 'stop', 'name', sample_ids[0]],
+                         sep = '\t'
+                         ).rename(columns={sample_ids[0]: external_ids[0]})
 
-    # Append data for remaining samples
+    # Append data for remaining samples by taking the intersection of intervals found in all samples
     for f, sid, eid, in zip(files[1:], sample_ids[1:], external_ids[1:]):
-        print(sid, eid)
-        df_to_add = pd.read_table(f, index_col=None, header=0, comment='#',
-                                  usecols=[sid]).rename(columns={sid: eid})
-        dfs.append(df_to_add)
-
-    # NOTE: In order to concatente samples into a single table,
-    # we need to shave off the extra rows in the samples with extra rows
-    # check: why would there ever be any extra rows?
-    n_rows = min([df.shape[0] for df in dfs])
-
-    # Merge dfs
-    df = pd.concat([df.iloc[0:n_rows] for df in dfs], axis=1)
+        df1 = pd.read_csv(f,comment="#", sep='\t').rename(columns={sid: eid})
+        df = pd.merge(df, df1, on=["contig", "start", "stop", "name"], how="inner")
 
     ################################################
     # Creating chromosome labels for plot
@@ -168,7 +159,19 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     chromosomes = df['chrm_str'].unique().tolist()
     n_intervals_per_chromosome = [df['chrm_str'].value_counts()[i] for i in chromosomes]
 
+    # need to select external ids in correct order here; above sorting of the df doesn't matter at all
+    subdf = df[df.columns[4:]].T
+    subdf['is_normal'] = [i == "Normal" for i in sample_types]
+    subdf['participant_id'] = participant_ids
+    subdf['external_id'] = external_ids
+
+    # sorted columns
+    external_ids_sorted = subdf.sort_values(by=['is_normal', 'participant_id', 'external_id'], ascending = [False, True, True]).loc[:,'external_id']
+    participant_ids_sorted = subdf.sort_values(by=['is_normal', 'participant_id', 'external_id'], ascending = [False, True, True]).loc[:,'participant_id']
+
     # Create tick arrays for plot
+    # Note that these ticks will be evenly spaced even if they represent intervals of differing size
+    # TODO: space the ticks to match the size of the interval
     tick_positions = np.cumsum(n_intervals_per_chromosome)
 
     # Divide samples into multiple figures if too many samples
@@ -189,28 +192,22 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     # with all normals on the left of the first figure, then the remainder sorted by participant_id and external_id
     # and split into multiple figures if there are more than samples_per_fig samples
     for fig_num in np.arange(num_figs):
-        # need to select external ids in correct order here; above sorting of the df doesn't matter at all
-        subdf = df[df.columns[4:]].T
-        subdf['is_normal'] = [i == "Normal" for i in sample_types]
-        subdf['participant_id'] = participant_ids
-        subdf['external_id'] = external_ids
 
-        # sorted columns
-        external_ids_sorted = subdf.sort_values(by=['is_normal', 'participant_id', 'external_id'], ascending = [False, True, True]).loc[:,'external_id']
-        participant_ids_sorted = subdf.sort_values(by=['is_normal', 'participant_id', 'external_id'], ascending = [False, True, True]).loc[:,'participant_id']
         # make x-axis labels with format "participant_id: external_id"
-        labels_for_xaxis = [str(m)+': '+str(n) for m,n in zip(participant_ids_sorted, external_ids_sorted)]
-
         fig_external_ids = external_ids_sorted[fig_num * samples_per_fig: (fig_num + 1) * samples_per_fig]
+        fig_participant_ids = participant_ids_sorted[fig_num * samples_per_fig: (fig_num + 1) * samples_per_fig]
+        labels_for_xaxis = [str(m)+': '+str(n) for m,n in zip(fig_participant_ids, fig_external_ids)]
+
         axs[fig_num].pcolor(df[fig_external_ids].values, cmap=plt.cm.RdBu_r, vmin=-2, vmax=2)
         axs[fig_num].set_yticklabels(chromosomes, minor=False)
         axs[fig_num].set_yticks(tick_positions)
         axs[fig_num].set_xticklabels(labels_for_xaxis, rotation=90, ha="left")
         axs[fig_num].set_xticks(range(len(df[fig_external_ids].columns.tolist())))
 
-    fig.subplots_adjust(bottom=0.55)
-    fig.savefig(fname + ".png")
-    print(fname+".png")
+    # TODO: determine better way than hardcoded number to leave enough space for labels
+    fig.subplots_adjust(hspace = 0.15)
+    fig.savefig(fname + ".pdf")
+    print(fname+".pdf")
     os.system('ls -alh')
     return
 
