@@ -205,7 +205,7 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
         axs[fig_num].set_xticks(range(len(df[fig_external_ids].columns.tolist())))
 
     # TODO: determine better way than hardcoded number to leave enough space for labels
-    fig.subplots_adjust(hspace = 0.15)
+    fig.subplots_adjust(hspace = 0.2)
     fig.savefig(fname + ".pdf")
     print(fname+".pdf")
     os.system('ls -alh')
