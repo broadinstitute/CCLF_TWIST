@@ -63,7 +63,7 @@ def getReport(workspace="nci-mimoun-bi-org/CCLF_Targeted",  # CCLF_Targeted inst
   print('you need to be on macOS for now')
   wm1 = dm.WorkspaceManager(namespace1, workspace1)
   wm_wes = dm.WorkspaceManager(namespacewes, workspacewes)
-  if specificlist is str:
+  if type(specificlist) is str:
     # we consider it is a filename
     specificlist = pd.read_csv(specificlist).tolist()
   elif specificlist is None:
@@ -175,14 +175,14 @@ def getReport(workspace="nci-mimoun-bi-org/CCLF_Targeted",  # CCLF_Targeted inst
               os.system('gsutil cp ' + imagedir + ' ' + outputloc + normal_id + '_copy_number_map.png')
             break
 
-      # we now have all the external_ids plus matched normal from 
+      # we now have all the external_ids plus matched normal from
       # the targeted data for this participant
       # create a merged CN heat map
-      # # actually, want the sample IDs not the ext_ids for now... 
+      # # actually, want the sample IDs not the ext_ids for now...
       # the workflow will grab the associated ext_ids
       getCNHeatMap(workspace=workspace,
                    mergeCNworkflow='PlotSomaticCNVMaps_PANCAN',
-                   list_sample_ids=sample_ids,  
+                   list_sample_ids=sample_ids,
                    output_filename='copy_number_heatmap.png',
                    samplesetname='report_' + val,
                    outputloc=outputloc
@@ -329,4 +329,4 @@ def getReport(workspace="nci-mimoun-bi-org/CCLF_Targeted",  # CCLF_Targeted inst
       print("We did not find any targeted probe data or WES data for " + val)
     else:
       Helper.mergeImages(images, tempdir + 'merged.png')  # merge all the horizontal CNV plots; check: may not want this...
-      os.system('gsutil cp ' + tempdir + 'merged.png ' + outputloc + 'merged_copy_number_map.png')
+      os.system('gsutil cp ' + tempdir + 'merged.png ' + outputloc + '/' + val + '_merged_copy_number_map.png') # add the participant_id to the front of the file name
