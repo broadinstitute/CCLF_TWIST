@@ -7,6 +7,7 @@
 rm(list=ls())
 suppressMessages(library(dplyr))
 suppressPackageStartupMessages(library("argparse"))
+suppressPackageStartupMessages(library(methods))
 
 ##################################################################
 #### Helper functions
@@ -53,14 +54,12 @@ new_fngs <- samples_data %>% bind_rows()
 # read in previous FNG db
 prev_fng_db <- read.delim(prev_fng_db)
 
-# they should share the same columns
-if (colnames(prev_fng_db) != colnames(new_fngs)){
-  print("Stopping execution: the column names for the old and new FNG db do not match!")
+# stop running if they do no not share the same column names (order doesn't matter)
+if (setequal(colnames(prev_fng_db), colnames(new_fngs))){
+  stop("Error: The old and new fingerprinting databases do not have the same columns")
 }
-# stop running if they do no not share the same column names
-stopifnot(colnames(prev_fng_db) == colnames(new_fngs))
 
-# merge and delete duplicate rows (no dups found in this instance)
+# merge and delete duplicate rows
 no_dups_merged <- bind_rows(new_fngs, prev_fng_db) %>% distinct(merged)
 
 ##########
