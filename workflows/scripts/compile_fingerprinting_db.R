@@ -55,8 +55,8 @@ new_fngs <- samples_data %>% bind_rows()
 prev_fng_db <- read.delim(prev_fng_db)
 
 # stop running if they do no not share the same column names (order doesn't matter)
-if (setequal(colnames(prev_fng_db), colnames(new_fngs))){
-  stop("Error: The old and new fingerprinting databases do not have the same columns")
+if (!setequal(colnames(prev_fng_db), colnames(new_fngs))){
+  stop("The old and new fingerprinting databases do not have the same columns")
 }
 
 # merge and delete duplicate rows
