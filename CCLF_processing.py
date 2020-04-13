@@ -1,9 +1,9 @@
 import dalmatian as dm
 import pandas as pd
-import Helper
 import os
 import numpy as np
-import TerraFunction as terra
+from JKBio import Helper
+from JKBio  import TerraFunction as terra
 
 
 def getCNHeatMap(workspace="nci-mimoun-bi-org/CCLF_Targeted",
