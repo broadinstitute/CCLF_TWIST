@@ -6,6 +6,7 @@
 
 rm(list=ls())
 suppressMessages(library(dplyr))
+suppressMessages(library(readr))
 suppressPackageStartupMessages(library("argparse"))
 suppressPackageStartupMessages(library(methods))
 
@@ -44,7 +45,8 @@ samples_data <- vector("list", N)
 # Compile all samples
 for (i in seq_along(files)) {
 	sample_tsca_id <- samples_tsca_ids[i]
-	sample_data <- read.delim(files[i]) %>% mutate(batch=sample_tsca_id)
+    sample_data <- readr::read_tsv(files[i], col_types = cols(.default = "?", major_allele = col_character())) %>% mutate(batch=sample_tsca_id)
+//    sample_data <- read.delim(files[i]) %>% mutate(batch=sample_tsca_id)
 	samples_data[[i]] <- sample_data
 }
 
@@ -54,7 +56,9 @@ new_fngs <- samples_data %>% bind_rows()
 ## Merge new FNG db with the previously existing FNG db
 ##########
 # read in previous FNG db
-prev_fng_db <- read.delim(prev_fng_db)
+//prev_fng_db <- read.delim(prev_fng_db)
+prev_fng_db <- readr::read_tsv(prev_fng_db, col_types = cols(.default = "?", major_allele = col_character()))
+
 
 # stop running if they do no not share the same column names (order doesn't matter)
 if (!setequal(colnames(prev_fng_db), colnames(new_fngs))){
