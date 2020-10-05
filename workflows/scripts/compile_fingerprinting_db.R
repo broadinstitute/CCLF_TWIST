@@ -35,6 +35,8 @@ prev_fng_db <- args$prev_fng_db_path
 ##########
 ## Compile table for all new samples
 ##########
+print("Compiling all the new samples into one table...")
+
 # Number of samples
 N = length(files)
 samples_data <- vector("list", N)
@@ -60,6 +62,7 @@ if (!setequal(colnames(prev_fng_db), colnames(new_fngs))){
 }
 
 # merge and delete duplicate rows
+print("Merging the old and newly created FNG databases...")
 no_dups_merged <- bind_rows(new_fngs, prev_fng_db) %>% distinct(merged)
 
 ##########
