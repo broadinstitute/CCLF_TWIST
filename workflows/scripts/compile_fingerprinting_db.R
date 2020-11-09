@@ -6,6 +6,7 @@
 
 rm(list=ls())
 suppressMessages(library(dplyr))
+suppressMessages(install.packages('readr', dependencies = TRUE, repos='http://cran.rstudio.com/'))
 suppressMessages(library(readr))
 suppressPackageStartupMessages(library("argparse"))
 suppressPackageStartupMessages(library(methods))
