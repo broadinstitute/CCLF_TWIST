@@ -56,12 +56,6 @@ new_fngs <- samples_data %>% bind_rows()
 # read in previous FNG dbs
 prev_fng_db <- read.delim(prev_fng_db)
 
-# # stop running if they do no not share the same column names (order doesn't matter)
-# if (!setequal(colnames(prev_fng_db), colnames(new_fngs))){
-#   print("The old and new fingerprinting databases do not have the same columns")
-#   stop("The old and new fingerprinting databases do not have the same columns")
-# }
-
 # stop running if not all of the columns in the old FNG database appear in the new database (order doesn't matter)
 cols_of_interest <- colnames(prev_fng_db)[!(colnames(prev_fng_db) %in% c('X.', 'NA.'))]
 if (!all(cols_of_interest %in% colnames(new_fngs))){
