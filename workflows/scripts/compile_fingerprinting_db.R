@@ -6,8 +6,6 @@
 
 rm(list=ls())
 suppressMessages(library(dplyr))
-suppressMessages(install.packages('readr', dependencies = TRUE, repos='http://cran.rstudio.com/'))
-suppressMessages(library(readr))
 suppressPackageStartupMessages(library("argparse"))
 suppressPackageStartupMessages(library(methods))
 
@@ -46,8 +44,7 @@ samples_data <- vector("list", N)
 # Compile all samples
 for (i in seq_along(files)) {
 	sample_tsca_id <- samples_tsca_ids[i]
-    sample_data <- readr::read_tsv(files[i], col_types = cols(.default = "?", major_allele = col_character())) %>% mutate(batch=sample_tsca_id)
-//    sample_data <- read.delim(files[i]) %>% mutate(batch=sample_tsca_id)
+	sample_data <- read.delim(files[i]) %>% mutate(batch=sample_tsca_id)
 	samples_data[[i]] <- sample_data
 }
 
@@ -56,22 +53,36 @@ new_fngs <- samples_data %>% bind_rows()
 ##########
 ## Merge new FNG db with the previously existing FNG db
 ##########
-# read in previous FNG db
-//prev_fng_db <- read.delim(prev_fng_db)
-prev_fng_db <- readr::read_tsv(prev_fng_db, col_types = cols(.default = "?", major_allele = col_character()))
+# read in previous FNG dbs
+prev_fng_db <- read.delim(prev_fng_db)
 
+# # stop running if they do no not share the same column names (order doesn't matter)
+# if (!setequal(colnames(prev_fng_db), colnames(new_fngs))){
+#   print("The old and new fingerprinting databases do not have the same columns")
+#   stop("The old and new fingerprinting databases do not have the same columns")
+# }
 
-# stop running if they do no not share the same column names (order doesn't matter)
-if (!setequal(colnames(prev_fng_db), colnames(new_fngs))){
-  stop("The old and new fingerprinting databases do not have the same columns")
+# stop running if not all of the columns in the old FNG database appear in the new database (order doesn't matter)
+cols_of_interest <- colnames(prev_fng_db)[!(colnames(prev_fng_db) %in% c('X.', 'NA.'))]
+if (!all(cols_of_interest %in% colnames(new_fngs))){
+  cols_missing_in_new = setdiff(cols_of_interest, colnames(new_fngs))
+  print("The new fingerprinting databases is missing some columns.")
+  print("The missing columns are:")
+  print(cols_missing_in_new)
+  stop("The new fingerprinting databases is missing some columns")
 }
 
+
 # merge and delete duplicate rows
-print("Merging the old and newly created FNG databases...")
-no_dups_merged <- bind_rows(new_fngs, prev_fng_db) %>% distinct(merged)
+print("Merging the old and newly created FNG databases, keeping only columns that existed in old database...")
+restricted_new_fng_db <- new_fngs[, colnames(new_fngs) %in% cols_of_interest]
+restricted_old_fng_db  <- prev_fng_db[, colnames(prev_fng_db) %in% cols_of_interest]
+no_dups_merged <- bind_rows(restricted_new_fng_db, restricted_old_fng_db) %>% distinct()
 
 ##########
 ## write out the final compiled FNG db
 ##########
 output = paste0("fingerprinting_db.txt")
 write.delim(no_dups_merged, output)
+print("Done merging and writing output fingerprinting table.")
+
