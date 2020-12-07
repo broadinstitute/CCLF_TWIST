@@ -44,7 +44,7 @@ samples_data <- vector("list", N)
 # Compile all samples
 for (i in seq_along(files)) {
 	sample_tsca_id <- samples_tsca_ids[i]
-	sample_data <- read.delim(files[i]) %>% mutate(batch=sample_tsca_id)
+	sample_data <- read.delim(files[i], colClasses = "character") %>% mutate(batch=sample_tsca_id)
 	samples_data[[i]] <- sample_data
 }
 
@@ -54,7 +54,7 @@ new_fngs <- samples_data %>% bind_rows()
 ## Merge new FNG db with the previously existing FNG db
 ##########
 # read in previous FNG dbs
-prev_fng_db <- read.delim(prev_fng_db)
+prev_fng_db <- read.delim(prev_fng_db, colClasses = "character")
 
 # stop running if not all of the columns in the old FNG database appear in the new database (order doesn't matter)
 cols_of_interest <- colnames(prev_fng_db)[!(colnames(prev_fng_db) %in% c('X.', 'NA.'))]
