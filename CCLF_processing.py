@@ -2,8 +2,8 @@ import dalmatian as dm
 import pandas as pd
 import os
 import numpy as np
-from JKBio import TerraFunction as terra
-from JKBio import Helper
+from JKBio import terra
+from JKBio.utils import helper
 import ipdb
 
 
@@ -228,7 +228,7 @@ def getReport(workspace1="CCLF_TSCA_2_0_3_HCMI", namespace1="nci-mimoun-bi-org",
 						# Text added to image is the external ID followed by the dataset (TWIST, TSCA, or WES) in parentheses
 						imagedir = tempdir + external_id + '_copy_number_map.png'
 						text = condition[external_id_col].replace("_", " ") + " (" + dset + ")"
-						Helper.addTextToImage(imagedir, text, outputpath=imagedir)
+						helper.addTextToImage(imagedir, text, outputpath=imagedir)
 						images.append(imagedir)
 						# TODO: start here. This should print for WES samples too, right?
 						print("Added imagedir to images")
@@ -306,7 +306,7 @@ def getReport(workspace1="CCLF_TSCA_2_0_3_HCMI", namespace1="nci-mimoun-bi-org",
 
 									if os.path.exists(imagedir):
 										text = normal_external_id.replace("_", " ") + " (" + dset + ", matched normal)"
-										Helper.addTextToImage(imagedir, text, outputpath=imagedir)
+										helper.addTextToImage(imagedir, text, outputpath=imagedir)
 										images.append(imagedir)
 										print("Added path for normal sample to images")
 										print("path:", str(imagedir))
@@ -379,7 +379,7 @@ def getReport(workspace1="CCLF_TSCA_2_0_3_HCMI", namespace1="nci-mimoun-bi-org",
 			# merge all the horizontal CNV plots
 			print("Uploading the merged CNV plot for", val)
 			print("images list:", images)
-			Helper.mergeImages(sorted(images), tempdir + 'merged.png')
+			helper.mergeImages(sorted(images), tempdir + 'merged.png')
 			os.system('gsutil cp ' + tempdir + 'merged.png ' + outputloc + 'merged_copy_number_map.png')
 
 
