@@ -1,3 +1,11 @@
+# Ignore images
+*.png
+*.pdf
+
+# Ignore temp folder
+temp/*
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
