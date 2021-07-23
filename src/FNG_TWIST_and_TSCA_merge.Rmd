@@ -1,0 +1,336 @@
+---
+title: "merge_FNG_db for TWIST and TSCA"
+author: "Gwen Miller"
+date: "12/5/2019"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    code_folding: "hide"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
+# set working directory to directory housing this file
+if (rstudioapi::isAvailable()) {
+  setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+} else {
+  setwd(getSrcDirectory(function(x) {x}))
+}
+
+datadir <- "./data/fng_db"
+rawdatadir <- "./raw/fng_db"
+source("./src/load_libraries_and_annotations.R")
+```
+
+```{r}
+## prior to TWIST 6
+# load data
+tsca_fng <- read_tsv(file = file.path(rawdatadir, "tsca_2_0_3_fingerprinting_db.txt"))
+twist_fng <- read_tsv(file = file.path(rawdatadir, "twist_fingerprinting_db.txt"))
+
+# they share the same columns
+colnames(tsca_fng) == colnames(twist_fng)
+
+# dim
+dim(tsca_fng)
+dim(twist_fng)
+
+# merge and delete duplicate rows (no dups found in this instance)
+merged = bind_rows(twist_fng, tsca_fng)
+no_dups_merged = distinct(merged)
+dim(merged)
+dim(no_dups_merged)
+
+# save the full FNG db for future upload to the PANCAN_TWIST copy workspace
+write.table(no_dups_merged, file=file.path(datadir, "fingerprinting_db.txt"), sep='\t', row.names = FALSE, quote=FALSE)
+
+## check that the file looks as you expect:
+# test <- read_tsv(file = file.path(datadir, "fingerprinting_db.txt"))
+
+```
+
+```{r}
+## for TWIST6-9
+twist_old <- read_tsv(file=file.path(datadir, "fingerprinting_db.txt"))
+twist_new <- read_tsv(file = file.path(rawdatadir, "twist_fingerprinting_db_through_CCLF_TWIST5.txt"))
+
+# do they share the same columns?
+setdiff(colnames(twist_old), colnames(twist_new))
+# library(arsenal)
+# summary(comparedf(twist_old, twist_new))
+
+# dim
+dim(twist_old)
+dim(twist_new)
+
+# merge and delete duplicate rows (no dups found in this instance)
+merged = bind_rows(twist_new, twist_old)
+no_dups_merged = distinct(merged)
+dim(merged)
+dim(no_dups_merged)
+
+# save the full FNG db for future upload to the PANCAN_TWIST copy workspace
+write.table(no_dups_merged, file=file.path(datadir, "fingerprinting_db_through_CCLF_TWIST9.txt"), sep='\t', row.names = FALSE, quote=FALSE)
+
+## check that the file looks as you expect:
+# test <- read_tsv(file = file.path(datadir, "fingerprinting_db_through_CCLF_TWIST9.txt"))
+
+## uploading to correct google bucket
+# gsutil cp /Users/gmiller/Documents/Work/GitHub/ccle_cclf/data/fng_db/fingerprinting_db_through_CCLF_TWIST9.txt gs://fc-ed07d172-7980-475e-81de-108a694a3532/
+```
+
+```{r twist10-12, eval=TRUE}
+## for TWIST10-12
+twist_old <- read_tsv(file=file.path(datadir, "fingerprinting_db_through_CCLF_TWIST9.txt"))
+twist_new <- read_tsv(file = file.path(rawdatadir, "twist_fingerprinting_db_through_CCLF_TWIST12.txt"))
+
+# do they share the same columns?
+setdiff(colnames(twist_old), colnames(twist_new))
+if (len(setdiff(colnames(twist_old), colnames(twist_new))) != 0) {
+  stop("The columns don't match between the old and new fingerprinting file. Stopping.")
+}
+# library(arsenal)
+# summary(comparedf(twist_old, twist_new))
+
+# dim
+dim(twist_old)
+dim(twist_new)
+
+# merge and delete duplicate rows
+merged = bind_rows(twist_new, twist_old)
+no_dups_merged = distinct(merged)
+dim(merged)
+dim(no_dups_merged)
+corner(no_dups_merged)
+
+# save the full FNG db for future upload to the PANCAN_TWIST copy workspace
+write.table(no_dups_merged, file=file.path(datadir, "fingerprinting_db_through_CCLF_TWIST12.txt"), sep='\t', row.names = FALSE, quote=FALSE)
+
+## check that the file looks as you expect:
+# test <- read_tsv(file = file.path(datadir, "fingerprinting_db_through_CCLF_TWIST9.txt"))
+
+## uploading to correct google bucket
+# gsutil cp /Users/gmiller/Documents/Work/GitHub/ccle_cclf/data/fng_db/fingerprinting_db_through_CCLF_TWIST12.txt gs://fc-ed07d172-7980-475e-81de-108a694a3532/
+
+## then update workspace data entries in Terra with
+# gs://fc-ed07d172-7980-475e-81de-108a694a3532/fingerprinting_db_through_CCLF_TWIST12.txt
+```
+
+```{r twist13-14, eval=TRUE}
+## for TWIST13-14
+twist_old <- read_tsv(file = file.path(datadir, "fingerprinting_db_through_CCLF_TWIST12.txt"))
+twist_new <- read_tsv(file = file.path(rawdatadir, "twist_fingerprinting_db_through_CCLF_TWIST14.txt"))
+
+# do they share the same columns?
+if (length(setdiff(colnames(twist_old), colnames(twist_new))) != 0) {
+  stop("The columns don't match between the old and new fingerprinting file. Stopping.")
+}
+# library(arsenal)
+# summary(comparedf(twist_old, twist_new))
+
+# dim
+dim(twist_old)
+dim(twist_new)
+
+# merge and delete duplicate rows
+merged = bind_rows(twist_new, twist_old)
+no_dups_merged = distinct(merged)
+dim(merged)
+dim(no_dups_merged)
+corner(no_dups_merged)
+
+# save the full FNG db for future upload to the PANCAN_TWIST copy workspace
+write.table(no_dups_merged, file = file.path(datadir, "fingerprinting_db_through_CCLF_TWIST14.txt"), sep='\t', row.names = FALSE, quote=FALSE)
+
+## check that the file looks as you expect:
+# test <- read_tsv(file = file.path(datadir, "fingerprinting_db_through_CCLF_TWIST14.txt"))
+
+## uploading to correct google bucket
+# gsutil cp /Users/gmiller/Documents/Work/GitHub/ccle_cclf/data/fng_db/fingerprinting_db_through_CCLF_TWIST14.txt gs://fc-ed07d172-7980-475e-81de-108a694a3532/
+
+## then update workspace data entries in Terra with
+# gs://fc-ed07d172-7980-475e-81de-108a694a3532/fingerprinting_db_through_CCLF_TWIST14.txt
+```
+
+
+# Steps to do:
+1. Call the function
+2. Upload file to correct google bucket
+3. Update two worksapce data entries (fingerprinting_db and the versioned key for this db) in Terra
+```{r merge-function}
+merge_fng_dbs <- function(path_old, path_new, path_merged, final_file_name){
+  twist_old <- readr::read_tsv(file = path_old)
+  twist_new <- readr::read_tsv(file = path_new)
+  
+  cols_of_interest <- colnames(twist_new)[!(colnames(twist_new) %in% c('X.', 'NA.'))]
+  twist_old <- twist_old[, colnames(twist_old) %in% cols_of_interest]
+  twist_new <- twist_new[, colnames(twist_new) %in% cols_of_interest]
+  
+  # do they share the same columns?
+  if (length(setdiff(colnames(twist_old), colnames(twist_new))) != 0) {
+    stop("The columns don't match between the old and new fingerprinting file. Stopping.")
+  }
+  # library(arsenal)
+  # summary(comparedf(twist_old, twist_new))
+  
+  # dim
+  print(paste0("dim(twist_old):",dim(twist_old)))
+  print(paste0("dim(twist_new):",dim(twist_new)))
+  
+  # merge and delete duplicate rows
+  merged = bind_rows(twist_new, twist_old)
+  no_dups_merged = distinct(merged)
+  print(paste0("dim(merged): ", dim(merged)))
+  print(paste0("dim(no_dups_merged): ", dim(no_dups_merged)))
+
+  # save the full FNG db for future upload to the PANCAN_TWIST copy workspace
+  write.table(no_dups_merged, file = path_merged, sep='\t', row.names = FALSE, quote=FALSE)
+  print(paste0("Merged file written to:", path_merged))
+  print(paste0("Next steps (after switching to current directory, which is GitHub/ccle_cclf:"))
+  print(paste0("1. Upload to correct google bucket. \n gsutil cp ", path_merged, " gs://fc-ed07d172-7980-475e-81de-108a694a3532/"))
+  print(paste0("2. Update the appropriate Terra workspace entries with the GS storage link (aka fingerprinting_db and the batch-specific key): gs://fc-ed07d172-7980-475e-81de-108a694a3532/",final_file_name ))
+  
+  
+  return(no_dups_merged)
+}
+
+```
+
+```{r example-call, eval = FALSE}
+path_old = file.path(datadir, "fingerprinting_db_through_CCLF_TWIST12.txt")
+path_new = file.path(rawdatadir, "twist_fingerprinting_db_through_CCLF_TWIST14.txt")
+final_file_name = "fingerprinting_db_through_CCLF_TWIST14.txt"
+path_merged = file.path(datadir, final_file_name)
+merge_fng_dbs(path_old, path_new, path_merged, final_file_name)
+```
+
+
+```{r through TWIST17}
+# Copy results of compiling individual FNG results into one txt doc to local
+# gsutil cp gs://fc-ed07d172-7980-475e-81de-108a694a3532/3f81e94e-9d55-4b5d-b0dd-0ccb5841ea80/FNG_Compile_db/558a59a4-5839-45c4-aeb3-de0af4b0890d/call-compile_db/fingerprinting_db.txt .
+# Renamed to twist_fingerprinting_db_through_CCLF_TWIST17.txt
+
+# Have I appropriately merged for through_CCLF_TWIST17?
+# Based on the contents of this file when I last opened it, it doesn't seem like it...
+path_old = file.path(datadir, "fingerprinting_db_through_CCLF_TWIST14.txt")
+path_new = file.path(rawdatadir, "twist_fingerprinting_db_through_CCLF_TWIST17.txt")
+final_file_name = "fingerprinting_db_through_CCLF_TWIST17.txt"
+path_merged = file.path(datadir, final_file_name)
+merge_fng_dbs(path_old, path_new, path_merged, final_file_name)
+```
+
+```{r through TWIST23}
+# TWIST18-23
+# Copy results of compiling individual FNG results (e.g. the compiling workflow) to local:
+# cd /Users/gmiller/Documents/Work/GitHub/ccle_cclf/raw/fng_db 
+# gsutil cp gs://fc-ed07d172-7980-475e-81de-108a694a3532/11a0e89a-8ecb-4c67-8f80-c9ff52b2661c/FNG_Compile_db/388f3f03-806f-4d31-a9ed-a6e05798c34e/call-compile_db/fingerprinting_db.txt .
+# Renamed to twist_fingerprinting_db_through_CCLF_TWIST23.txt
+
+path_old = file.path(datadir, "fingerprinting_db_through_CCLF_TWIST17.txt")
+path_new = file.path(rawdatadir, "twist_fingerprinting_db_through_CCLF_TWIST23.txt")
+final_file_name = "fingerprinting_db_through_CCLF_TWIST23.txt"
+path_merged = file.path(datadir, final_file_name)
+result = merge_fng_dbs(path_old, path_new, path_merged, final_file_name)
+```
+
+```{r through TWIST25}
+# TWIST24-25
+# Copy results of compiling individual FNG results (e.g. the compiling workflow) to local:
+# cd /Users/gmiller/Documents/Work/GitHub/ccle_cclf/raw/fng_db 
+# gsutil cp gs://fc-ed07d172-7980-475e-81de-108a694a3532/e1a2115f-19d5-476c-bc49-23948bcb047f/FNG_Compile_db/91889b18-c4a8-4cba-8973-86b0e151b8a8/call-compile_db/fingerprinting_db.txt .
+# Renamed to twist_fingerprinting_db_through_CCLF_TWIST23.txt
+
+path_old = file.path(datadir, "fingerprinting_db_through_CCLF_TWIST23.txt")
+path_new = file.path(rawdatadir, "twist_fingerprinting_db_through_CCLF_TWIST25.txt")
+final_file_name = "fingerprinting_db_through_CCLF_TWIST25.txt"
+path_merged = file.path(datadir, final_file_name)
+result = merge_fng_dbs(path_old, path_new, path_merged, final_file_name)
+```
+
+```{r through TWIST26}
+# TWIST26
+# Copy results of compiling individual FNG results (e.g. the compiling workflow) to local
+# and rename file to "twist_fingerprinting_db_through_CCLF_TWIST{LAST_BATCH_INCLUDED}.txt":
+# cd /Users/gmiller/Documents/Work/GitHub/ccle_cclf/raw/fng_db 
+# gsutil cp gs://fc-ed07d172-7980-475e-81de-108a694a3532/6e4070b0-a66e-4eb5-b0fc-82d427468e07/FNG_Compile_db/91374dc9-972c-4397-a04e-9fba710eca0d/call-compile_db/fingerprinting_db.txt .
+# mv fingerprinting_db.txt twist_fingerprinting_db_through_CCLF_TWIST26.txt
+
+path_old = file.path(datadir, "fingerprinting_db_through_CCLF_TWIST25.txt")
+path_new = file.path(rawdatadir, "twist_fingerprinting_db_through_CCLF_TWIST26.txt")
+final_file_name = "fingerprinting_db_through_CCLF_TWIST26.txt"
+path_merged = file.path(datadir, final_file_name)
+result = merge_fng_dbs(path_old, path_new, path_merged, final_file_name)
+```
+
+
+```{r through TWIST27}
+# TWIST27
+# Copy results of compiling individual FNG results (e.g. the compiling workflow) to local
+# and rename file to "twist_fingerprinting_db_through_CCLF_TWIST{LAST_BATCH_INCLUDED}.txt":
+# cd /Users/gmiller/Documents/Work/GitHub/ccle_cclf/raw/fng_db 
+# gsutil cp gs://fc-ed07d172-7980-475e-81de-108a694a3532/6e4070b0-a66e-4eb5-b0fc-82d427468e07/FNG_Compile_db/91374dc9-972c-4397-a04e-9fba710eca0d/call-compile_db/fingerprinting_db.txt .
+# mv fingerprinting_db.txt twist_fingerprinting_db_through_CCLF_TWIST27.txt
+
+path_old = file.path(datadir, "fingerprinting_db_through_CCLF_TWIST26.txt")
+path_new = file.path(rawdatadir, "twist_fingerprinting_db_through_CCLF_TWIST27.txt")
+final_file_name = "fingerprinting_db_through_CCLF_TWIST27.txt"
+path_merged = file.path(datadir, final_file_name)
+result = merge_fng_dbs(path_old, path_new, path_merged, final_file_name)
+```
+
+```{r through TWIST29}
+# TWIST29
+# Copy results of compiling individual FNG results (e.g. the compiling workflow) to local
+# and rename file to "twist_fingerprinting_db_through_CCLF_TWIST{LAST_BATCH_INCLUDED}.txt":
+# cd /Users/gmiller/Documents/Work/GitHub/ccle_cclf/raw/fng_db 
+# gsutil cp gs://fc-ed07d172-7980-475e-81de-108a694a3532/98926cbc-3da5-4c35-992e-dec68295794f/FNG_Compile_db/85e41bf2-1522-4ff1-b069-5118c0f446a8/call-compile_db/fingerprinting_db.txt .
+# mv fingerprinting_db.txt twist_fingerprinting_db_through_CCLF_TWIST29.txt
+
+path_old = file.path(datadir, "fingerprinting_db_through_CCLF_TWIST27.txt")
+path_new = file.path(rawdatadir, "twist_fingerprinting_db_through_CCLF_TWIST29.txt")
+final_file_name = "fingerprinting_db_through_CCLF_TWIST29.txt"
+path_merged = file.path(datadir, final_file_name)
+result = merge_fng_dbs(path_old, path_new, path_merged, final_file_name)
+```
+
+```{r through TWIST30}
+# TWIST30
+# Copy results of compiling individual FNG results (e.g. the compiling workflow) to local
+# and rename file to "twist_fingerprinting_db_through_CCLF_TWIST{LAST_BATCH_INCLUDED}.txt":
+# cd /Users/gmiller/Documents/Work/GitHub/ccle_cclf/raw/fng_db && gsutil cp gs://fc-ed07d172-7980-475e-81de-108a694a3532/2be3171b-6fcd-48e7-b86e-405bb7d9a20c/FNG_Compile_db/3aaa952c-0f50-425e-865b-9cedfd013439/call-compile_db/fingerprinting_db.txt . && mv fingerprinting_db.txt twist_fingerprinting_db_through_CCLF_TWIST30.txt
+
+path_old = file.path(datadir, "fingerprinting_db_through_CCLF_TWIST29.txt")
+path_new = file.path(rawdatadir, "twist_fingerprinting_db_through_CCLF_TWIST30.txt")
+final_file_name = "fingerprinting_db_through_CCLF_TWIST30.txt"
+path_merged = file.path(datadir, final_file_name)
+result = merge_fng_dbs(path_old, path_new, path_merged, final_file_name)
+```
+
+```{r through TWIST31}
+# TWIST31
+# Copy results of compiling individual FNG results (e.g. the compiling workflow) to local
+# and rename file to "twist_fingerprinting_db_through_CCLF_TWIST{LAST_BATCH_INCLUDED}.txt":
+# cd /Users/gmiller/Documents/Work/GitHub/ccle_cclf/raw/fng_db && gsutil cp gs://fc-ed07d172-7980-475e-81de-108a694a3532/6917276b-b54b-4b60-b206-b629d04e843d/FNG_Compile_db/f055cf29-b3b9-4bc4-9605-c1ffe7e98059/call-compile_db/fingerprinting_db.txt . && mv fingerprinting_db.txt twist_fingerprinting_db_through_CCLF_TWIST31.txt
+
+path_old = file.path(datadir, "fingerprinting_db_through_CCLF_TWIST30.txt")
+path_new = file.path(rawdatadir, "twist_fingerprinting_db_through_CCLF_TWIST31.txt")
+final_file_name = "fingerprinting_db_through_CCLF_TWIST31.txt"
+path_merged = file.path(datadir, final_file_name)
+result = merge_fng_dbs(path_old, path_new, path_merged, final_file_name)
+```
+
+```{r through TWIST34}
+# TWIST34
+# Copy results of compiling individual FNG results (e.g. the compiling workflow) to local
+# and rename file to "twist_fingerprinting_db_through_CCLF_TWIST{LAST_BATCH_INCLUDED}.txt":
+# cd /Users/gmiller/Documents/Work/GitHub/ccle_cclf/raw/fng_db && gsutil cp gs://fc-ed07d172-7980-475e-81de-108a694a3532/3340526c-28b5-4cef-9e65-e0cd21d036a7/FNG_Compile_db/4bd9e34f-ddae-4089-b82b-56e9569e2b35/call-compile_db/fingerprinting_db.txt . && mv fingerprinting_db.txt twist_fingerprinting_db_through_CCLF_TWIST34.txt
+
+path_old = file.path(datadir, "fingerprinting_db_through_CCLF_TWIST31.txt")
+path_new = file.path(rawdatadir, "twist_fingerprinting_db_through_CCLF_TWIST34.txt")
+final_file_name = "fingerprinting_db_through_CCLF_TWIST34.txt"
+path_merged = file.path(datadir, final_file_name)
+result = merge_fng_dbs(path_old, path_new, path_merged, final_file_name)
+```
+
