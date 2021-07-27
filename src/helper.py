@@ -4,11 +4,12 @@ import numpy as np
 import dalmatian as dm
 from gsheets import Sheets
 
+sheets = Sheets.from_files('~/.client_secret.json', '~/.storage.json')
 
-def getCohortAbbreviations(df):
+
+def getCohortAbbreviations(df, cohorts2id_url="https://docs.google.com/spreadsheets/d/1R97pgzoX0YClGDr5nmQYQwimnKXxDBGnGzg7YPlhZJU"):
     # mapping abbreviations to full names/descriptions
-    cohorts2id="https://docs.google.com/spreadsheets/d/1R97pgzoX0YClGDr5nmQYQwimnKXxDBGnGzg7YPlhZJU"
-    cohorts = sheets.get(cohorts2id).sheets[0].to_frame()
+    cohorts = sheets.get(cohorts2id_url).sheets[0].to_frame()
     # match collection data and error out
     cohortlist = []
     no_cohort_match = set()
@@ -57,7 +58,13 @@ def regenerate_variables(workspace="nci-mimoun-bi-org/PANCAN_TWIST copy"):
 
     return sample_info, all_pairsets, cohorts_per_batch, cohort_pairsets
 
+
 def check_cohort_abbrev_availability(df, cohorts2id_url):
+    _, no_cohort_match = get_list_of_cohort_abbrevs_in_df(df, cohorts2id_url)
+    return no_cohort_match
+
+
+def get_list_of_cohort_abbrevs_in_df(df, cohorts2id_url):
     # the df must contain the columns: `Collection` (this is found in the External ID sheet)
 
     # cohorts and cohort abbreviations
@@ -76,9 +83,9 @@ def check_cohort_abbrev_availability(df, cohorts2id_url):
             cohortlist.append(res['ID'].values[0])
     print("we do not have a corresponding cohort abbreviation for these cohorts: [{0}]".format(", ".join(str(i) for i in no_cohort_match)))
 
-    return no_cohort_match
+    return cohortlist, no_cohort_match
 
-def create_preliminary_sample_and_metadata_tables(wto, wfrom, external_sheets_url_list, cohorts2id_url):
+def create_preliminary_sample_and_metadata_tables(wto, wfrom, samplesetnames, external_sheets_url_list, cohorts2id_url, forcekeep=[]):
     # Inputs:
     # - wto: Dalmation workspace manager for the data processing workspace
     # - wfrom: Dalmation workspace manager for the data delivery workspace
@@ -136,7 +143,7 @@ def create_preliminary_sample_and_metadata_tables(wto, wfrom, external_sheets_ur
     # keep the new samples that we have metadata for
     tokeep = set(metadata.index) & set(newsamples.index)
     if len(tokeep) != post_filter_len:
-        print("\nThe data delivery wm (which is used to create `newsamples`) doesn't contain all the samples specified in the External Sheet(s) (which are used to create `metadata`). \nThe",len(set(metadata.index) - set(newsamples.index)),"samples we couldn't find are:", set(metadata.index) - set(newsamples.index), "\nThis can occur if a line is blacklisted due to too few reads, for example.")
+        print("\nThe data delivery workspace (which is used to create `newsamples`) doesn't contain all the samples specified in the External Sheet(s) (which are used to create `metadata`). \nThe",len(set(metadata.index) - set(newsamples.index)),"samples we couldn't find are:", set(metadata.index) - set(newsamples.index), "\nThis can occur if a line is blacklisted due to too few reads, for example.")
 
 
 
@@ -155,21 +162,32 @@ def create_preliminary_sample_and_metadata_tables(wto, wfrom, external_sheets_ur
 
 def check_required_metadata_columns(df, required_metadata_cols, drop=False):
     # If samples in the df are lacking any of the required metadata columns, flag these samples.
-    print('Since they don\'t have full data, we will be dropping ' + str(len(df.iloc[[j for j,i in enumerate(df[required_metadata_cols].isna().values.sum(1)) if i !=0]].index.tolist())) + ' samples: \n' +  str(df.iloc[[j for j, i in enumerate(df[required_metadata_cols].isna().values.sum(1)) if i !=0]].index.tolist()))
+    samplesMissingMetadata = df.iloc[[j for j,i in enumerate(df[required_metadata_cols].isna().values.sum(1)) if i !=0]].index.tolist()
+    nMissing = len(samplesMissingMetadata)
+
+    # Return if no samples are missing metadata
+    if nMissing == 0:
+        print("No samples are missing any required metadata. Continue running the pipeline.")
+        return
+
+    print('Since they don\'t have full data, we will be dropping ' + str(nMissing) + ' samples: \n' +  str(samplesMissingMetadata)
 
     # examine which columns in the External Sheet had missing information
     print('\nNumber of NAs for each required column:')
     print(df[required_metadata_cols].isna().sum())
 
+    if not drop:
+        print('\nStop running the pipeline. Ask the CCLF team to fill out the missing values in the External Sheet.')
+
     if drop:
         # only keep samples that have all the appropriate information
-        df = df.iloc[[j for j,i in enumerate(df[required_metadata_cols].isna().values.sum(1)) if i ==0]]
+        df = df.iloc[[j for j,i in enumerate(df[required_metadata_cols].isna().values.sum(1)) if i == 0]]
         print('We have now dropped the samples for which we didn\'t have all the required metadata columns.')
 
     return df
 
 
-def create_sample_df_for_terra(wm, df, cohorts2id_url):
+def create_sample_df_for_terra(wm, df, cohorts2id_url, picard_aggregation_type_validation='PCR', source='CCLF'):
     # Create sample df to upload to Terra
     # Inputs: df containing filtered set of samples plus metadata, cohorts and abbreviations gsheet url
     # - wm: Dalmation workspace manager for the data processing workspace
@@ -177,6 +195,7 @@ def create_sample_df_for_terra(wm, df, cohorts2id_url):
 
     # cohorts and cohort abbreviations
     cohorts = sheets.get(cohorts2id_url).sheets[0].to_frame()
+    cohortlist, _ = get_list_of_cohort_abbrevs_in_df(df, cohorts2id_url)
 
     # we look at all the samples we already have in the data processing workspace
     refsamples = wm.get_samples()
@@ -187,7 +206,7 @@ def create_sample_df_for_terra(wm, df, cohorts2id_url):
     sample_info['batch'] = df['batch'].astype(str)
     sample_info['individual_id'] = df['Collaborator Participant ID'].astype(str)
     sample_info['reference_id'] = df['Exported DNA SM-ID'].astype(str)
-    sample_info['patient_id'] = df['Participant ID'].astype(str) ## check: this is a new column in the external sheet. The name may change.
+    sample_info['patient_id'] = df['Participant ID'].astype(str)
     sample_info['participant'] = df['Collaborator Participant ID'].astype(str)
     sample_info['aggregation_product_name_validation'] = df['bait_set'].astype(str)
     # here we add this number as the reference id might be present many times already for different samples
@@ -217,6 +236,7 @@ def create_sample_df_for_terra(wm, df, cohorts2id_url):
     sample_info['bsp_sample_id_validation'] = df.index.astype(str).strip()
     sample_info['stock_sample_id_validation'] = df['Stock DNA SM-ID'].astype(str).strip()
     sample_info['sample_type'] = df['Sample Type'].astype(str).strip()
+    # TODO: I don't know what the "picard_aggregation_type_validation" is used for. Right now, the value is completely meaningless.
     sample_info['picard_aggregation_type_validation'] = [picard_aggregation_type_validation] * sample_info.shape[0]
     sample_info['tumor_subtype'] = df['Tumor Type'].astype(str).strip()
     sample_info['squid_sample_id_validation'] = sample_info['external_id_validation']
@@ -328,13 +348,136 @@ def create_dict_of_samples_per_sampleset(sample_info, samplesetnames, save=False
     return dict_samples_per_batch
 
 
-def create_sample_sets():
-    pass
+# TODO: WIP
+# def create_dict_of_cohorts_per_sampleset(sample_info, samplesetnames, save=False, filename='dict_cohorts_per_batch.npy'):
+#     # Samples => retrieve the batch, assign to the key
+#     dict_samples_per_batch = {}
+#     for samplesetname in samplesetnames:
+#         dict_samples_per_batch[samplesetname] = []
+#
+#     # Retrieve the batch which sample belongs to
+#     for sample_id, sample in sample_info.iterrows():
+#         batch = sample_info.loc[sample_id]['batch']
+#         dict_samples_per_batch[batch].append(sample_id)
+#
+#     if save:
+#         print('Saving dictionary of samples per sampleset to %s' % filename)
+#         np.save(filename, dict_samples_per_batch)
+#
+#     return dict_samples_per_batch
+
+def create_aggregate_samplesets(normalsid, proc_workspace, wto):
+    print("Creating and uploading sample sets for all samples in workspace, and all normals in workspace...")
+    # create sample set for all normals in workspace (will use all combined normals in PoN for mutation calling)
+
+    terra.addToSampleSet(proc_workspace, samplesetid="All_normals_TWIST", samples=normalsid)
+
+    all_samples = wto.get_samples().index.tolist()
+    all_samples.remove('NA')
+    terra.addToSampleSet(proc_workspace, samplesetid="All_samples_TWIST", samples=all_samples)
+    return
+
+def create_sample_sets_per_batch(sample_info, samplesetnames, samplesetnames_all, samplesetnames_tumors, samplesetnames_normals):
+    print("Creating and uploading sample sets for each batch...")
+    # want to create a sample set for each batch
+    for i, current_batch in enumerate(samplesetnames):
+        # get appropriate subset of the samples
+        batch_sample_info = sample_info[sample_info['batch'] == current_batch]
+        # define batch-specific tumors and normals
+        batch_normals = [r["participant"] for _, r in batch_sample_info.iterrows() if r['sample_type'] == "Normal"]
+        batch_normalsid = [k for k, _ in batch_sample_info.iterrows() if _['sample_type'] == "Normal"]
+        batch_tumors = [r["participant"] for _, r in batch_sample_info.iterrows() if r['sample_type'] == "Tumor"]
+        batch_tumorsid = [k for k,_ in batch_sample_info.iterrows() if _['sample_type'] == "Tumor"]
+        # create 3 batch-level sample sets: all, tumors, normals
+        terra.addToSampleSet(proc_workspace, samplesetid=samplesetnames_all[i], samples=batch_sample_info.index.tolist())
+        terra.addToSampleSet(proc_workspace, samplesetid=samplesetnames_tumors[i], samples=batch_tumorsid)
+        terra.addToSampleSet(proc_workspace, samplesetid=samplesetnames_normals[i], samples=batch_normalsid)
+    return
 
 
-def create_sample_sets():
-    pass
+def create_pair_sets_per_batch(samplesetnames, samplesetnames_pairs, proc_workspace, dict_pairs_per_batch):
+    print("Uploading a pair set for each batch...")
+    for i, current_batch in enumerate(samplesetnames):
+        terra.addToPairSet(proc_workspace, samplesetnames_pairs[i], dict_pairs_per_batch[current_batch])
+    return
 
 
-def create_pair_sets():
-    pass
+
+def create_samplesets_and_pairsets_per_cohort(sample_info, samplesetnames, proc_workspace):
+    print("Creating and uploading pairsets and samplesets by cohort (iterating over each batch)...")
+    cohorts_per_batch = {}
+    for i, current_batch in enumerate(samplesetnames):
+
+        # get appropriate subset of the samples for each batch
+        batch_sample_info = sample_info[sample_info['batch'] == samplesetnames[i]]
+        cohorts_in_batch = []
+        # for each batch, make pairsets and samplesets by cohort
+        for val in cohorts['ID'].values:
+            cohortsamples = batch_sample_info[batch_sample_info["cohorts"] == val].index.tolist()
+            tumorsamplesincohort = batch_sample_info[batch_sample_info["cohorts"] == val][batch_sample_info['sample_type']=="Tumor"].index.tolist()
+            pairsamples = newpairs[newpairs['case_sample'].isin(tumorsamplesincohort)].index.tolist()
+            if len(cohortsamples)>0:
+                cohorts_in_batch.append(val)
+                terra.addToSampleSet(proc_workspace, val, cohortsamples)
+
+            if len(pairsamples)>0:
+                terra.addToPairSet(proc_workspace,val, pairsamples)
+
+        batch_name = samplesetnames[i]
+        cohorts_per_batch.update(batch_name = cohorts_in_batch)
+    return
+
+
+# old aggregate function to generate all the cohort and batch specific sammple sets and pair sets
+def create_pairsets_and_samplesets(wto, samplesetnames, proc_workspace, sample_info, dict_pairs_per_batch, samplesetnames_all, samplesetnames_tumors, samplesetnames_normals):
+    # TODO: Uploading to Terra takes time. Right now, I iterate over cohorts and upload during the iteration. This means that if 2 batches have samples belonging to the same cohort, I upload to that cohort's sample set in Terra 2 times. This is inefficient. We could greatly speed this up (if we run multiple batches at once) by only uploading the cohort-level pairsets and samplesets at the end. That would mean tracking for each cohort all of the new samples (across each batch), then updating Terra at the end.
+    # create a pair set for each batch.
+    cohorts_per_batch = {}
+    for i, current_batch in enumerate(samplesetnames):
+        # upload a pair set for each batch
+        terra.addToPairSet(proc_workspace, samplesetnames_pairs[i], dict_pairs_per_batch[current_batch])
+
+        # get appropriate subset of the samples for each batch
+        batch_sample_info = sample_info[sample_info['batch'] == samplesetnames[i]]
+        cohorts_in_batch = []
+        cohorts_with_pairs = [] # check: currently not used.
+        # for each batch, make pairsets by cohort
+        for val in cohorts['ID'].values:
+            cohortsamples = batch_sample_info[batch_sample_info["cohorts"] == val].index.tolist()
+            tumorsamplesincohort = batch_sample_info[batch_sample_info["cohorts"] == val][batch_sample_info['sample_type']=="Tumor"].index.tolist()
+            pairsamples = newpairs[newpairs['case_sample'].isin(tumorsamplesincohort)].index.tolist()
+            if len(cohortsamples)>0:
+                cohorts_in_batch.append(val)
+                terra.addToSampleSet(proc_workspace, val, cohortsamples)
+
+            if len(pairsamples)>0:
+                cohorts_with_pairs.append(val)
+                terra.addToPairSet(proc_workspace,val, pairsamples)
+
+        batch_name = samplesetnames[i]
+        cohorts_per_batch.update(batch_name = cohorts_in_batch)
+
+    print("creating sample sets for each batch...")
+    # want to create a sample set for each batch
+    for i, current_batch in enumerate(samplesetnames):
+        # get appropriate subset of the samples
+        batch_sample_info = sample_info[sample_info['batch'] == current_batch]
+        # define batch-specific tumors and normals
+        batch_normals = [r["participant"] for _, r in batch_sample_info.iterrows() if r['sample_type'] == "Normal"]
+        batch_normalsid = [k for k, _ in batch_sample_info.iterrows() if _['sample_type'] == "Normal"]
+        batch_tumors = [r["participant"] for _, r in batch_sample_info.iterrows() if r['sample_type'] == "Tumor"]
+        batch_tumorsid = [k for k,_ in batch_sample_info.iterrows() if _['sample_type'] == "Tumor"]
+        # create 3 batch-level sample sets: all, tumors, normals
+        terra.addToSampleSet(proc_workspace, samplesetid=samplesetnames_all[i], samples=batch_sample_info.index.tolist())
+        terra.addToSampleSet(proc_workspace, samplesetid=samplesetnames_tumors[i], samples=batch_tumorsid)
+        terra.addToSampleSet(proc_workspace, samplesetid=samplesetnames_normals[i], samples=batch_normalsid)
+
+    print("creating sample sets for all samples in workspace, and all normals in workspace...")
+    # create sample set for all normals in workspace (will use all combined normals in PoN for mutation calling)
+    normalsid.extend([k for k, _ in refsamples.iterrows() if _.sample_type == "Normal"])
+    terra.addToSampleSet(proc_workspace, samplesetid="All_normals_TWIST", samples=normalsid)
+
+    # create sample sets for all samples in workspace
+    all_samples = wto.get_samples().index.tolist()
+    all_samples.remove('NA')
+    terra.addToSampleSet(proc_workspace, samplesetid="All_samples_TWIST", samples=all_samples)
