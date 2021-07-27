@@ -73,16 +73,17 @@ def get_list_of_cohort_abbrevs_in_df(df, cohorts2id_url):
     # match collection data and error out
     cohortlist = []
     no_cohort_match = set()
-    for k, val in sample_info['Collection'].iteritems():
+    for k, val in df['Collection'].iteritems():
         res = cohorts[cohorts['Name'] == val]
         if len(res) == 0:
-            print(res)
             no_cohort_match.add(str(val))
             cohortlist.append('nan')
         else:
             cohortlist.append(res['ID'].values[0])
-    print("we do not have a corresponding cohort abbreviation for these cohorts: [{0}]".format(", ".join(str(i) for i in no_cohort_match)))
 
+    if len(no_cohort_match) != 0:
+        print("We do not have a corresponding cohort abbreviation for these cohorts: [{0}]".format(", ".join(str(i) for i in no_cohort_match)))
+        print("Stop running the pipeline and have the CCLF team fix the missing cohort information.")
     return cohortlist, no_cohort_match
 
 def create_preliminary_sample_and_metadata_tables(wto, wfrom, samplesetnames, external_sheets_url_list, cohorts2id_url, forcekeep=[]):
@@ -160,7 +161,10 @@ def create_preliminary_sample_and_metadata_tables(wto, wfrom, samplesetnames, ex
     return newsamples, newmetadata
 
 
-def check_required_metadata_columns(df, required_metadata_cols, drop=False):
+def check_required_metadata_columns(df, required_metadata_cols, cohorts2id_url, drop=False):
+    # check collection (cohort) data and raise warning if missing
+    check_cohort_abbrev_availability(df, cohorts2id_url)
+
     # If samples in the df are lacking any of the required metadata columns, flag these samples.
     samplesMissingMetadata = df.iloc[[j for j,i in enumerate(df[required_metadata_cols].isna().values.sum(1)) if i !=0]].index.tolist()
     nMissing = len(samplesMissingMetadata)
@@ -168,9 +172,9 @@ def check_required_metadata_columns(df, required_metadata_cols, drop=False):
     # Return if no samples are missing metadata
     if nMissing == 0:
         print("No samples are missing any required metadata. Continue running the pipeline.")
-        return
+        return df
 
-    print('Since they don\'t have full data, we will be dropping ' + str(nMissing) + ' samples: \n' +  str(samplesMissingMetadata)
+    print("Since they do not have full data, we will be dropping " + str(nMissing) + " samples: \n" +  str(samplesMissingMetadata))
 
     # examine which columns in the External Sheet had missing information
     print('\nNumber of NAs for each required column:')
@@ -233,24 +237,19 @@ def create_sample_df_for_terra(wm, df, cohorts2id_url, picard_aggregation_type_v
             num_to_add = num_in_workspace + 1
         sample_info['external_id_validation'][i] = ext_id_for_sample + '_' + str(num_to_add)
 
-    sample_info['bsp_sample_id_validation'] = df.index.astype(str).strip()
-    sample_info['stock_sample_id_validation'] = df['Stock DNA SM-ID'].astype(str).strip()
-    sample_info['sample_type'] = df['Sample Type'].astype(str).strip()
+    sample_info['bsp_sample_id_validation'] = df.index.str.strip()
+    sample_info['stock_sample_id_validation'] = df['Stock DNA SM-ID'].str.strip()
+    sample_info['sample_type'] = df['Sample Type'].str.strip()
     # TODO: I don't know what the "picard_aggregation_type_validation" is used for. Right now, the value is completely meaningless.
     sample_info['picard_aggregation_type_validation'] = [picard_aggregation_type_validation] * sample_info.shape[0]
-    sample_info['tumor_subtype'] = df['Tumor Type'].astype(str).strip()
+    sample_info['tumor_subtype'] = df['Tumor Type'].str.strip()
     sample_info['squid_sample_id_validation'] = sample_info['external_id_validation']
-    sample_info['source_subtype_validation'] = df['Original Material Type'].astype(str).strip()
-    sample_info['processed_subtype_validation'] = df['Material Type'].astype(str).strip()
-    sample_info['primary_disease'] = df['Primary Disease'].astype(str).strip()
-    sample_info['media'] = df['Media on Tube'].astype(str).strip()
-    sample_info['Collection'] = df['Collection'].astype(str).strip()
-
-    # match collection (cohort) data and raise warning if missing
-    check_cohort_abbrev_availability(sample_info, cohorts2id_url)
-
+    sample_info['source_subtype_validation'] = df['Original Material Type'].str.strip()
+    sample_info['processed_subtype_validation'] = df['Material Type'].str.strip()
+    sample_info['primary_disease'] = df['Primary Disease'].str.strip()
+    sample_info['media'] = df['Media on Tube'].str.strip()
+    sample_info['Collection'] = df['Collection'].str.strip()
     sample_info['cohorts'] = cohortlist
-
     sample_info['tissue_site'] = df['Tissue Site'].astype(str)
     sample_info['source'] = [source] * sample_info.shape[0]
     sample_info['sample_id'] = df.index.astype(str)
@@ -368,12 +367,14 @@ def create_dict_of_samples_per_sampleset(sample_info, samplesetnames, save=False
 
 def create_aggregate_samplesets(normalsid, proc_workspace, wto):
     print("Creating and uploading sample sets for all samples in workspace, and all normals in workspace...")
-    # create sample set for all normals in workspace (will use all combined normals in PoN for mutation calling)
-
-    terra.addToSampleSet(proc_workspace, samplesetid="All_normals_TWIST", samples=normalsid)
-
     all_samples = wto.get_samples().index.tolist()
     all_samples.remove('NA')
+
+    # remove duplicates
+    normalsid = list(set(normalsid))
+
+    # create sample set for all normals in workspace (will use all combined normals in PoN for mutation calling)
+    terra.addToSampleSet(proc_workspace, samplesetid="All_normals_TWIST", samples=normalsid)
     terra.addToSampleSet(proc_workspace, samplesetid="All_samples_TWIST", samples=all_samples)
     return
 
@@ -403,8 +404,9 @@ def create_pair_sets_per_batch(samplesetnames, samplesetnames_pairs, proc_worksp
 
 
 
-def create_samplesets_and_pairsets_per_cohort(sample_info, samplesetnames, proc_workspace):
+def create_samplesets_and_pairsets_per_cohort(sample_info, samplesetnames, proc_workspace, cohorts2id_url):
     print("Creating and uploading pairsets and samplesets by cohort (iterating over each batch)...")
+    cohorts = sheets.get(cohorts2id_url).sheets[0].to_frame()
     cohorts_per_batch = {}
     for i, current_batch in enumerate(samplesetnames):
 
