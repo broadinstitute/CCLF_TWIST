@@ -3,6 +3,11 @@ import pandas as pd
 import numpy as np
 import dalmatian as dm
 from gsheets import Sheets
+import sys
+pathtoJK_parent = "../"
+sys.path.append(pathtoJK_parent)
+from JKBio import terra
+
 
 sheets = Sheets.from_files('~/.client_secret.json', '~/.storage.json')
 
@@ -378,7 +383,7 @@ def create_aggregate_samplesets(normalsid, proc_workspace, wto):
     terra.addToSampleSet(proc_workspace, samplesetid="All_samples_TWIST", samples=all_samples)
     return
 
-def create_sample_sets_per_batch(sample_info, samplesetnames, samplesetnames_all, samplesetnames_tumors, samplesetnames_normals):
+def create_sample_sets_per_batch(sample_info, samplesetnames, samplesetnames_all, samplesetnames_tumors, samplesetnames_normals, proc_workspace):
     print("Creating and uploading sample sets for each batch...")
     # want to create a sample set for each batch
     for i, current_batch in enumerate(samplesetnames):
@@ -404,7 +409,7 @@ def create_pair_sets_per_batch(samplesetnames, samplesetnames_pairs, proc_worksp
 
 
 
-def create_samplesets_and_pairsets_per_cohort(sample_info, samplesetnames, proc_workspace, cohorts2id_url):
+def create_samplesets_and_pairsets_per_cohort(sample_info, samplesetnames, proc_workspace, cohorts2id_url, newpairs):
     print("Creating and uploading pairsets and samplesets by cohort (iterating over each batch)...")
     cohorts = sheets.get(cohorts2id_url).sheets[0].to_frame()
     cohorts_per_batch = {}
