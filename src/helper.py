@@ -32,13 +32,14 @@ def getCohortAbbreviations(df, cohorts2id_url="https://docs.google.com/spreadshe
     return df
 
 
-def regenerate_variables(workspace="nci-mimoun-bi-org/PANCAN_TWIST copy"):
+def regenerate_variables(wm, samplesetnames, cohorts2id_url):
     # Run function when need to re-generate key variables: sample_info, all_pairsets, the cohorts_per_batch dictionary, cohort_pairsets
     # Inputs:
     # - wm: Dalmation workspace manager for the data processing workspace
 
-    wm = dm.WorkspaceManager(workspace)
+    # wm = dm.WorkspaceManager(workspace)
     # will use "cohort_pairsets" to create cohort-specific SNV tsv and CN heat map
+    cohorts = sheets.get(cohorts2id_url).sheets[0].to_frame()
     sample_info = wm.get_samples() # TODO: check whether to use this or not
     cohorts_per_batch = {} # will be dict of cohorts in each batch
     all_changed_cohorts = set()
@@ -61,7 +62,7 @@ def regenerate_variables(workspace="nci-mimoun-bi-org/PANCAN_TWIST copy"):
     all_pairsets = wm.get_pair_sets().index.tolist()
     cohort_pairsets = set(all_changed_cohorts) - (set(all_changed_cohorts) - set(all_pairsets))
 
-    return sample_info, all_pairsets, cohorts_per_batch, cohort_pairsets
+    return sample_info, all_pairsets, cohorts_per_batch, cohort_pairsets, all_changed_cohorts
 
 
 def check_cohort_abbrev_availability(df, cohorts2id_url):
