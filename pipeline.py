@@ -69,7 +69,10 @@ replace = {'T': 'Tumor', 'N': 'Normal', 'm': 'Unknown', 'L': 'Unknown'}
 # create sample set names for each batch in *chronological* order (e.g. CCLF_TWIST1 before CCLF_TWIST2)
 # if you only have one batch to run, still make it a list e.g. ["CCLF_TWIST1"]
 # this ensures that the pipeline will run as designed
-samplesetnames = ['CCLF_TWIST36']
+
+TWIST_versions = [36]
+samplesetnames = [f'CCLF_TWIST{TWIST_version}' for TWIST_version in TWIST_versions]
+samplesetname_prev = 'CCLF_TWIST{}'.format(min(TWIST_versions) - 1)
 
 
 # list of the external sheets produced for each batch you want to run through the pipeline
@@ -530,7 +533,7 @@ terra.waitForSubmission(proc_workspace, FNG_Compile_db_slow_download)
 import pandas as pd
 
 workspace_attr = wto.get_workspace_metadata()['workspace']['attributes']
-fp_old = pd.read_csv(workspace_attr['fingerprinting_db_through_CCLF_TWIST34'], sep='\t')
+fp_old = pd.read_csv(workspace_attr['fingerprinting_db_through_' + samplesetname_prev], sep='\t')
 fp_new = pd.read_csv(workspace_attr['fingerprinting_db_through_' + samplesetnames[-1]], sep='\t')
 assert not fp_new.duplicated().any()
 assert not fp_old.duplicated().any()
@@ -544,7 +547,9 @@ fp_all.reset_index(drop=True, inplace=True)
 assert fp_new.shape == fp_all.shape
 assert fp_all.equals(fp_new)
 fp_all_filename = '/tmp/fingerprinting_db_through_{}.txt'.format(samplesetnames[-1])
-print('It seems like the merging step of the pipeline does not do anything and can be dropped.\nUntil this refactoring is implemented will save the Python-generated merged file to {}'.format(fp_all_filename))
+print('It seems like the merging step of the pipeline does not do anything and can be dropped.\
+      \nMaybe if there are multiple TWIST versions in one run, this would matter??? \
+      \nUntil a proper refactoring is implemented we will save the Python-generated merged file to {}'.format(fp_all_filename))
 fp_all.to_csv(fp_all_filename, sep='\t', index=False)
 
 
