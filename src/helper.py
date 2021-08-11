@@ -87,9 +87,9 @@ def get_list_of_cohort_abbrevs_in_df(df, cohorts2id_url):
         else:
             cohortlist.append(res['ID'].values[0])
 
-    if len(no_cohort_match) != 0:
-        print("We do not have a corresponding cohort abbreviation for these cohorts: [{0}]".format(", ".join(str(i) for i in no_cohort_match)))
-        print("Stop running the pipeline and have the CCLF team fix the missing cohort information.")
+    assert len(no_cohort_match) == 0,\
+        "We do not have a corresponding cohort abbreviation for these cohorts: [{0}]".format(", ".join(str(i) for i in no_cohort_match)) + \
+        "\nStop running the pipeline and have the CCLF team fix the missing cohort information."
     return cohortlist, no_cohort_match
 
 def create_preliminary_sample_and_metadata_tables(wto, wfrom, samplesetnames, external_sheets_url_list, cohorts2id_url, forcekeep=[]):
@@ -186,8 +186,7 @@ def check_required_metadata_columns(df, required_metadata_cols, cohorts2id_url, 
     print('\nNumber of NAs for each required column:')
     print(df[required_metadata_cols].isna().sum())
 
-    if not drop:
-        print('\nStop running the pipeline. Ask the CCLF team to fill out the missing values in the External Sheet.')
+    assert drop, '\nStop running the pipeline. Ask the CCLF team to fill out the missing values in the External Sheet.'
 
     if drop:
         # only keep samples that have all the appropriate information
