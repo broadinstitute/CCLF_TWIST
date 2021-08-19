@@ -70,14 +70,14 @@ replace = {'T': 'Tumor', 'N': 'Normal', 'm': 'Unknown', 'L': 'Unknown'}
 # if you only have one batch to run, still make it a list e.g. ["CCLF_TWIST1"]
 # this ensures that the pipeline will run as designed
 
-TWIST_versions = [36]
+TWIST_versions = [37]
 samplesetnames = [f'CCLF_TWIST{TWIST_version}' for TWIST_version in TWIST_versions]
 samplesetname_prev = 'CCLF_TWIST{}'.format(min(TWIST_versions) - 1)
 
 
 # list of the external sheets produced for each batch you want to run through the pipeline
 # TO EDIT:
-gsheeturllist = ['https://docs.google.com/spreadsheets/d/1X0VvxsefdWdSDWPNYDd0V76ZOJpdyJQ43B78EciRtvs/edit#gid=0']
+gsheeturllist = ['https://docs.google.com/spreadsheets/d/1oEiftKI6nHiMOeLZJtx-j3NTgJVSILS9q1i5efWK86c/edit#gid=0']
 
 # generate the sample set names we will use in Terra
 samplesetnames_normals = [s + '_normals' for s in samplesetnames]
