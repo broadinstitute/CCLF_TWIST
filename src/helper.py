@@ -45,7 +45,7 @@ def regenerate_variables(wm, samplesetnames, cohorts2id_url):
     all_changed_cohorts = set()
     for i in range(len(samplesetnames)):
         # get appropriate subset of the samples for each batch
-        batch_sample_info = sample_info[sample_info['batch'] == samplesetnames[i]]
+        batch_sample_info = sample_info[sample_info['batch'] == samplesetnames[i][:-4]]
         cohorts_in_batch = set()
         cohorts_with_pairs = [] # check: currently not used.
         # for each batch, make pairsets by cohort
