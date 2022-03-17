@@ -162,7 +162,7 @@ def create_preliminary_sample_and_metadata_tables(wto, wfrom, samplesetnames, ex
     newsamples = newsamples[newsamples.index.isin(tokeep)]
     newmetadata = metadata[metadata.index.isin(tokeep)].sort_index().drop_duplicates("Exported DNA SM-ID")
     print("Final dimensions of the newsamples table: ", newsamples.shape)
-    print("Final dimensions of the newmetadata table: ", newsamples.shape)
+    print("Final dimensions of the newmetadata table: ", newmetadata.shape)
 
     return newsamples, newmetadata
 
