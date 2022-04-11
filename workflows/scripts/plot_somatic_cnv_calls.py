@@ -161,6 +161,8 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
 
     # need to select external ids in correct order here; above sorting of the df doesn't matter at all
     subdf = df[df.columns[4:]].T
+    print('subdf index: ', subdf.index.tolist())
+    print('length of subdf: ', str(len(subdf)))
     subdf['is_normal'] = [i == "Normal" for i in sample_types]
     subdf['participant_id'] = participant_ids
     subdf['external_id'] = external_ids
