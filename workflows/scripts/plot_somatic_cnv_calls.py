@@ -110,13 +110,11 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
                          usecols=['contig', 'start', 'stop', 'name', sample_ids[0]],
                          sep = '\t'
                          ).rename(columns={sample_ids[0]: external_ids[0]})
-    print('df column names (1): ', df.columns.tolist())
 
     # Append data for remaining samples by taking the intersection of intervals found in all samples
     for f, sid, eid, in zip(files[1:], sample_ids[1:], external_ids[1:]):
         df1 = pd.read_csv(f,comment="#", sep='\t').rename(columns={sid: eid})
         df = pd.merge(df, df1, on=["contig", "start", "stop", "name"], how="inner")
-    print('df column names (2): ', df.columns.tolist())
 
     ################################################
     # Creating chromosome labels for plot
@@ -134,6 +132,8 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     df.sort_values(by='chrm_int', ascending=False, inplace=True)
     df = df.drop('chrm_int', axis=1)
     print('df column names (3): ', df.columns.tolist())
+    df_t = df.T
+    print('transposed df index names: ', df_t.index.tolist())
 
     ################################################
     # Save raw data to file
