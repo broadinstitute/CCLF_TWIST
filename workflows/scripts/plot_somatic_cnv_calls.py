@@ -132,8 +132,6 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     df.sort_values(by='chrm_int', ascending=False, inplace=True)
     df = df.drop('chrm_int', axis=1)
     print('df column names (3): ', df.columns.tolist())
-    df_t = df.T
-    print('transposed df index names: ', df_t.index.tolist())
 
     ################################################
     # Save raw data to file
@@ -163,6 +161,8 @@ def plot_raw_cnv_calls(sample_ids, external_ids, sample_types, participant_ids, 
     n_intervals_per_chromosome = [df['chrm_str'].value_counts()[i] for i in chromosomes]
 
     # need to select external ids in correct order here; above sorting of the df doesn't matter at all
+    df_t = df.T
+    print('transposed df index names: ', df_t.index.tolist())
     subdf = df[df.columns[4:]].T
     print('subdf index: ', subdf.index.tolist())
     print('length of subdf: ', str(len(subdf)))
