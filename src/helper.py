@@ -4,9 +4,9 @@ import numpy as np
 import dalmatian as dm
 from gsheets import Sheets
 import sys
-pathtoJK_parent = "../"
+pathtoJK_parent = "../depmap_omics/"
 sys.path.append(pathtoJK_parent)
-from JKBio import terra
+from mgenepy import terra
 
 
 sheets = Sheets.from_files('~/.client_secret.json', '~/.storage.json')

@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "cclf-twist"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.9"
+numpy = "^1.24.1"
+pandas = "^1.5.3"
+firecloud_dalmatian= {git = "https://github.com/pgm/dalmatian", rev = "5f37ef9"}
+jupyter = "^1.1.1"
+depmap_omics = {git = "https://github.com/broadinstitute/depmap_omics.git"}
+gsheets = "^0.6.1"
+
+[[tool.poetry.source]]
+name = "public-python"
+url = "https://us-central1-python.pkg.dev/cds-artifacts/public-python/simple/"
+priority = "supplemental"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
