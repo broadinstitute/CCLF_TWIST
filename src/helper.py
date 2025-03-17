@@ -211,13 +211,14 @@ def create_sample_df_for_terra(wm, df, cohorts2id_url, picard_aggregation_type_v
 
     print('creating new sample information df')
     # from this filtered set of samples (df) we create a dataframe which will get uploaded to terra
-    sample_info = df[['crai_or_bai_path', 'cram_or_bam_path']].copy()
+    sample_info = df[['bai_file', 'bam_file']].copy()
+    sample_info = sample_info.rename(columns={"bai_file": "crai_or_bai_path", "bam_file": "cram_or_bam_path"})
     sample_info['batch'] = df['batch'].astype(str)
     sample_info['individual_id'] = df['Collaborator Participant ID'].astype(str)
-    sample_info['reference_id'] = df['Exported DNA SM-ID'].astype(str)
+    sample_info['reference_id'] = df['Stock DNA SM-ID'].astype(str)
     sample_info['patient_id'] = df['Participant ID'].astype(str)
     sample_info['participant'] = df['Collaborator Participant ID'].astype(str)
-    sample_info['aggregation_product_name_validation'] = df['bait_set'].astype(str)
+    sample_info['aggregation_product_name_validation'] = df['bait_set_capture'].astype(str)
     # here we add this number as the reference id might be present many times already for different samples
     # in the processing workspace
 
