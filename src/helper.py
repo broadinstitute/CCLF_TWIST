@@ -132,13 +132,13 @@ def create_preliminary_sample_and_metadata_tables(wto, wfrom, samplesetnames, ex
     ttype = [i for i in metadata["Sample Type"]]
     metadata['sample_id'] = [str(val['Collaborator Sample ID'][:-1]) + '-' + str(val['Sample Type']) + '-' + str(val['Exported DNA SM-ID']) for i, val in metadata.iterrows()]
 
-    samples1.index = [i.split('_')[2] for i, val in samples1.iterrows()]
+    # samples1.index = [i.split('_')[2] for i, val in samples1.iterrows()]
 
-    samples1['sample_id'] = [str(val["individual_alias"]) + '-' + str(val['sample_type']) + '-' + i for i, val in samples1.iterrows()]
+    samples1['sample_id'] = [str(val["collaborator_participant_id"]) + '-' + str(val['sample_type']) + '-' + i for i, val in samples1.iterrows()]
 
     print("Number of samples already in Terra: ", samples1.index.isin(refids).tolist().count(False))
 
-    metadata.index = metadata['Exported DNA SM-ID']
+    metadata.index = metadata['Stock DNA SM-ID']
     # print("Number of samples in the input External ID metadata: ",len(metadata.index.tolist()))
 
     # filtering on what already exists in the processing wm (refids)
