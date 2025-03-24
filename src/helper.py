@@ -380,8 +380,8 @@ def create_aggregate_samplesets(normalsid, proc_workspace, wto):
     normalsid = list(set(normalsid))
 
     # create sample set for all normals in workspace (will use all combined normals in PoN for mutation calling)
-    terra.addToSampleSet(proc_workspace, samplesetid="All_normals_TWIST", samples=normalsid)
-    terra.addToSampleSet(proc_workspace, samplesetid="All_samples_TWIST", samples=all_samples)
+    addToSampleSet(proc_workspace, samplesetid="All_normals_TWIST", samples=normalsid)
+    addToSampleSet(proc_workspace, samplesetid="All_samples_TWIST", samples=all_samples)
     return
 
 def create_sample_sets_per_batch(sample_info, samplesetnames, samplesetnames_all, samplesetnames_tumors, samplesetnames_normals, proc_workspace):
@@ -396,16 +396,16 @@ def create_sample_sets_per_batch(sample_info, samplesetnames, samplesetnames_all
         batch_tumors = [r["participant"] for _, r in batch_sample_info.iterrows() if r['sample_type'] == "Tumor"]
         batch_tumorsid = [k for k,_ in batch_sample_info.iterrows() if _['sample_type'] == "Tumor"]
         # create 3 batch-level sample sets: all, tumors, normals
-        terra.addToSampleSet(proc_workspace, samplesetid=samplesetnames_all[i], samples=batch_sample_info.index.tolist())
-        terra.addToSampleSet(proc_workspace, samplesetid=samplesetnames_tumors[i], samples=batch_tumorsid)
-        terra.addToSampleSet(proc_workspace, samplesetid=samplesetnames_normals[i], samples=batch_normalsid)
+        addToSampleSet(proc_workspace, samplesetid=samplesetnames_all[i], samples=batch_sample_info.index.tolist())
+        addToSampleSet(proc_workspace, samplesetid=samplesetnames_tumors[i], samples=batch_tumorsid)
+        addToSampleSet(proc_workspace, samplesetid=samplesetnames_normals[i], samples=batch_normalsid)
     return
 
 
 def create_pair_sets_per_batch(samplesetnames, samplesetnames_pairs, proc_workspace, dict_pairs_per_batch):
     print("Uploading a pair set for each batch...")
     for i, current_batch in enumerate(samplesetnames):
-        terra.addToPairSet(proc_workspace, samplesetnames_pairs[i], dict_pairs_per_batch[current_batch])
+        addToPairSet(proc_workspace, samplesetnames_pairs[i], dict_pairs_per_batch[current_batch])
     return
 
 
@@ -426,10 +426,10 @@ def create_samplesets_and_pairsets_per_cohort(sample_info, samplesetnames, proc_
             pairsamples = newpairs[newpairs['case_sample'].isin(tumorsamplesincohort)].index.tolist()
             if len(cohortsamples)>0:
                 cohorts_in_batch.append(val)
-                terra.addToSampleSet(proc_workspace, val, cohortsamples)
+                addToSampleSet(proc_workspace, val, cohortsamples)
 
             if len(pairsamples)>0:
-                terra.addToPairSet(proc_workspace,val, pairsamples)
+                addToPairSet(proc_workspace,val, pairsamples)
 
         batch_name = samplesetnames[i]
         cohorts_per_batch.update(batch_name = cohorts_in_batch)
@@ -443,7 +443,7 @@ def create_pairsets_and_samplesets(wto, samplesetnames, proc_workspace, sample_i
     cohorts_per_batch = {}
     for i, current_batch in enumerate(samplesetnames):
         # upload a pair set for each batch
-        terra.addToPairSet(proc_workspace, samplesetnames_pairs[i], dict_pairs_per_batch[current_batch])
+        addToPairSet(proc_workspace, samplesetnames_pairs[i], dict_pairs_per_batch[current_batch])
 
         # get appropriate subset of the samples for each batch
         batch_sample_info = sample_info[sample_info['batch'] == samplesetnames[i]]
@@ -456,11 +456,11 @@ def create_pairsets_and_samplesets(wto, samplesetnames, proc_workspace, sample_i
             pairsamples = newpairs[newpairs['case_sample'].isin(tumorsamplesincohort)].index.tolist()
             if len(cohortsamples)>0:
                 cohorts_in_batch.append(val)
-                terra.addToSampleSet(proc_workspace, val, cohortsamples)
+                addToSampleSet(proc_workspace, val, cohortsamples)
 
             if len(pairsamples)>0:
                 cohorts_with_pairs.append(val)
-                terra.addToPairSet(proc_workspace,val, pairsamples)
+                addToPairSet(proc_workspace,val, pairsamples)
 
         batch_name = samplesetnames[i]
         cohorts_per_batch.update(batch_name = cohorts_in_batch)
@@ -476,16 +476,67 @@ def create_pairsets_and_samplesets(wto, samplesetnames, proc_workspace, sample_i
         batch_tumors = [r["participant"] for _, r in batch_sample_info.iterrows() if r['sample_type'] == "Tumor"]
         batch_tumorsid = [k for k,_ in batch_sample_info.iterrows() if _['sample_type'] == "Tumor"]
         # create 3 batch-level sample sets: all, tumors, normals
-        terra.addToSampleSet(proc_workspace, samplesetid=samplesetnames_all[i], samples=batch_sample_info.index.tolist())
-        terra.addToSampleSet(proc_workspace, samplesetid=samplesetnames_tumors[i], samples=batch_tumorsid)
-        terra.addToSampleSet(proc_workspace, samplesetid=samplesetnames_normals[i], samples=batch_normalsid)
+        addToSampleSet(proc_workspace, samplesetid=samplesetnames_all[i], samples=batch_sample_info.index.tolist())
+        addToSampleSet(proc_workspace, samplesetid=samplesetnames_tumors[i], samples=batch_tumorsid)
+        addToSampleSet(proc_workspace, samplesetid=samplesetnames_normals[i], samples=batch_normalsid)
 
     print("creating sample sets for all samples in workspace, and all normals in workspace...")
     # create sample set for all normals in workspace (will use all combined normals in PoN for mutation calling)
     normalsid.extend([k for k, _ in refsamples.iterrows() if _.sample_type == "Normal"])
-    terra.addToSampleSet(proc_workspace, samplesetid="All_normals_TWIST", samples=normalsid)
+    addToSampleSet(proc_workspace, samplesetid="All_normals_TWIST", samples=normalsid)
 
     # create sample sets for all samples in workspace
     all_samples = wto.get_samples().index.tolist()
     all_samples.remove('NA')
-    terra.addToSampleSet(proc_workspace, samplesetid="All_samples_TWIST", samples=all_samples)
+    addToSampleSet(proc_workspace, samplesetid="All_samples_TWIST", samples=all_samples)
+
+def addToSampleSet(workspace, samplesetid, samples):
+    """
+    add samples to a sample set
+
+    will create new if doesn't already exist, else adds to existing
+
+    Args:
+    ----
+      workspace: the workspace name
+      samplesetid: the sample set name
+      samples: a list of samples
+    """
+    try:
+        prevsamples = dm.WorkspaceManager(workspace).get_sample_sets()["samples"][
+            samplesetid
+        ]
+        samples.extend(prevsamples)
+    except KeyError:
+        print(
+            "The sample set "
+            + str(samplesetid)
+            + " did not exist in the workspace. Will be created now..."
+        )
+    dm.WorkspaceManager(workspace).update_sample_set(samplesetid, list(set(samples)))
+
+def addToPairSet(workspace, pairsetid, pairs):
+    """
+    add pairs to a pair set
+
+    will create new if doesn't already exist, else adds to existing
+
+    Args:
+    ----
+      workspace: the workspace name
+      pairsetid: the pair set name
+      pairs: a list of pairs
+    """
+
+    try:
+        prevpairs = (
+            dm.WorkspaceManager(workspace).get_pair_sets().loc[[pairsetid]].pairs[0]
+        )
+        pairs.extend(prevpairs)
+    except KeyError:
+        print(
+            "The pair set "
+            + str(pairsetid)
+            + " did not exist in the workspace. Will be created now..."
+        )
+    dm.WorkspaceManager(workspace).update_pair_set(pairsetid, list(set(pairs)))
