@@ -14,6 +14,8 @@ firecloud_dalmatian= {git = "https://github.com/pgm/dalmatian", rev = "5f37ef9"}
 jupyter = "^1.1.1"
 depmap_omics = {git = "https://github.com/broadinstitute/depmap_omics.git"}
 gsheets = "^0.6.1"
+fsspec = "^2025.3.0"
+gcsfs = "^2025.3.0"
 
 [[tool.poetry.source]]
 name = "public-python"
